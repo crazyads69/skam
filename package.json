@@ -1,0 +1,28 @@
+{
+  "name": "skam",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bun run --filter '*' dev",
+    "dev:api": "bun run --cwd apps/api dev",
+    "dev:web": "bun run --cwd apps/web dev",
+    "build": "bun run --filter '*' build",
+    "build:api": "bun run --cwd apps/api build",
+    "build:web": "bun run --cwd apps/web build",
+    "lint": "bun run --filter '*' lint",
+    "typecheck": "bun run --filter '*' typecheck",
+    "test": "bun run --filter '*' test",
+    "db:migrate": "bun run --cwd apps/api prisma:migrate",
+    "db:push": "bun run --cwd apps/api prisma:push",
+    "db:studio": "bun run --cwd apps/api prisma:studio"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.0",
+    "typescript": "^5.7.0"
+  }
+}

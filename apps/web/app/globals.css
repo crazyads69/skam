@@ -1,0 +1,18 @@
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, sans-serif;
+  background: #0a0a0f;
+  color: #e6edf3;
+}
+
+a {
+  color: inherit;
+}

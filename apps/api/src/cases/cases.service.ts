@@ -1,0 +1,213 @@
+import { BadRequestException, HttpException, Injectable, NotFoundException } from '@nestjs/common'
+import type { PaginatedResponse, ScamCase } from '@skam/shared/src/types'
+import { CaseStatus, SocialPlatform } from '@skam/shared/src/types'
+import { createHash } from 'node:crypto'
+import { CacheService } from '../cache/cache.service'
+import { PrismaService } from '../database/prisma.service'
+import { TurnstileService } from '../turnstile/turnstile.service'
+import { CreateCaseDto } from './dto/create-case.dto'
+import { SearchCaseDto } from './dto/search-case.dto'
+
+type SearchResult = PaginatedResponse<ScamCase>
+
+@Injectable()
+export class CasesService {
+  public constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: CacheService,
+    private readonly turnstile: TurnstileService
+  ) {}
+
+  public async createCase(payload: CreateCaseDto, requesterIp?: string): Promise<ScamCase> {
+    const isLimited: boolean = await this.cache.fixedWindowLimit(`ratelimit:cases:${requesterIp ?? 'unknown'}`, 5, 60 * 60 * 24)
+    if (!isLimited) throw new HttpException('Bạn đã gửi quá số lần cho phép hôm nay', 429)
+    if (payload.turnstileToken) {
+      const isValid: boolean = await this.turnstile.verify(payload.turnstileToken, requesterIp)
+      if (!isValid) throw new BadRequestException('Turnstile token không hợp lệ')
+    }
+    const created = await this.prisma.scamCase.create({
+      data: {
+        bankIdentifier: payload.bankIdentifier.trim(),
+        bankName: payload.bankName.trim(),
+        bankCode: payload.bankCode.toUpperCase().trim(),
+        amount: payload.amount ?? null,
+        scammerName: payload.scammerName?.trim() ?? null,
+        originalDescription: payload.originalDescription.trim(),
+        refinedDescription: null,
+        status: CaseStatus.PENDING,
+        submitterFingerprint: payload.submitterFingerprint
+          ? this.hashValue(payload.submitterFingerprint)
+          : null,
+        submitterIpHash: requesterIp ? this.hashValue(requesterIp) : null,
+        viewCount: 0,
+        socialLinks: payload.socialLinks?.length
+          ? {
+              create: payload.socialLinks.map((item) => ({
+                platform: item.platform as SocialPlatform,
+                url: item.url,
+                username: item.username ?? null
+              }))
+            }
+          : undefined,
+        evidenceFiles: payload.evidenceFiles?.length
+          ? {
+              create: payload.evidenceFiles.map((item) => ({
+                fileType: item.fileType,
+                fileKey: item.fileKey,
+                fileName: item.fileName ?? null,
+                fileSize: item.fileSize ?? null,
+                fileHash: item.fileHash ?? null,
+                isApproved: false
+              }))
+            }
+          : undefined
+      },
+      include: {
+        evidenceFiles: true,
+        socialLinks: true
+      }
+    })
+    return this.mapCase(created)
+  }
+
+  public async searchCases(query: SearchCaseDto): Promise<SearchResult> {
+    const normalizedQuery: string = query.q.toLowerCase().trim()
+    const page: number = query.page
+    const pageSize: number = query.pageSize
+    const skip: number = (page - 1) * pageSize
+    const where = {
+      status: CaseStatus.APPROVED,
+      ...(query.bankCode ? { bankCode: query.bankCode.toUpperCase().trim() } : {}),
+      OR: [
+        { bankIdentifier: { contains: normalizedQuery } },
+        { scammerName: { contains: normalizedQuery } }
+      ]
+    }
+    const [items, total] = await Promise.all([
+      this.prisma.scamCase.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+        include: {
+          evidenceFiles: true,
+          socialLinks: true
+        }
+      }),
+      this.prisma.scamCase.count({ where })
+    ])
+    return {
+      success: true,
+      data: items.map((item) => this.mapCase(item)),
+      page,
+      pageSize,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / pageSize))
+    }
+  }
+
+  public async getCaseById(id: string): Promise<ScamCase> {
+    const found = await this.prisma.scamCase.findFirst({
+      where: { id, status: CaseStatus.APPROVED }
+    })
+    if (!found) throw new NotFoundException('Không tìm thấy vụ việc')
+    const updated = await this.prisma.scamCase.update({
+      where: { id: found.id },
+      data: { viewCount: { increment: 1 } },
+      include: {
+        evidenceFiles: true,
+        socialLinks: true
+      }
+    })
+    return this.mapCase(updated)
+  }
+
+  private mapCase(input: {
+    id: string
+    bankIdentifier: string
+    bankName: string
+    bankCode: string
+    amount: number | null
+    scammerName: string | null
+    originalDescription: string
+    refinedDescription: string | null
+    status: string
+    approvedAt?: Date | null
+    approvedBy?: string | null
+    rejectionReason?: string | null
+    submitterFingerprint?: string | null
+    submitterIpHash?: string | null
+    viewCount: number
+    evidenceFiles?: Array<{
+      id: string
+      caseId: string
+      fileType: string
+      fileKey: string
+      fileName: string | null
+      fileSize: number | null
+      fileHash: string | null
+      isApproved: boolean
+      createdAt: Date
+      updatedAt: Date
+    }>
+    socialLinks?: Array<{
+      id: string
+      platform: string
+      url: string
+      username: string | null
+      caseId: string | null
+      profileId: string | null
+      createdAt: Date
+      updatedAt: Date
+    }>
+    createdAt: Date
+    updatedAt: Date
+  }): ScamCase {
+    return {
+      id: input.id,
+      bankIdentifier: input.bankIdentifier,
+      bankName: input.bankName,
+      bankCode: input.bankCode,
+      amount: input.amount,
+      scammerName: input.scammerName,
+      originalDescription: input.originalDescription,
+      refinedDescription: input.refinedDescription,
+      status: input.status as CaseStatus,
+      approvedAt: input.approvedAt?.toISOString() ?? null,
+      approvedBy: input.approvedBy ?? null,
+      rejectionReason: input.rejectionReason ?? null,
+      submitterFingerprint: input.submitterFingerprint ?? null,
+      submitterIpHash: input.submitterIpHash ?? null,
+      viewCount: input.viewCount,
+      evidenceFiles: input.evidenceFiles?.map((item) => ({
+        id: item.id,
+        caseId: item.caseId,
+        fileType: item.fileType,
+        fileKey: item.fileKey,
+        fileName: item.fileName,
+        fileSize: item.fileSize,
+        fileHash: item.fileHash,
+        isApproved: item.isApproved,
+        createdAt: item.createdAt.toISOString(),
+        updatedAt: item.updatedAt.toISOString()
+      })),
+      socialLinks: input.socialLinks?.map((item) => ({
+        id: item.id,
+        platform: item.platform as SocialPlatform,
+        url: item.url,
+        username: item.username,
+        caseId: item.caseId,
+        profileId: item.profileId,
+        createdAt: item.createdAt.toISOString(),
+        updatedAt: item.updatedAt.toISOString()
+      })),
+      createdAt: input.createdAt.toISOString(),
+      updatedAt: input.updatedAt.toISOString()
+    }
+  }
+
+  private hashValue(value: string): string {
+    const salt: string = process.env.HASH_SALT ?? 'skam-salt'
+    return createHash('sha256').update(`${salt}:${value}`).digest('hex')
+  }
+}
