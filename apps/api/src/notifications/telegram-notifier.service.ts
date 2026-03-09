@@ -62,8 +62,9 @@ export class TelegramNotifierService {
   private async fetchWithTimeout(url: string, payload: unknown, timeoutMs: number): Promise<Response | null> {
     const abortController = new AbortController()
     const timer = setTimeout(() => abortController.abort(), timeoutMs)
+    let response: Response | null = null
     try {
-      return await fetch(url, {
+      response = await fetch(url, {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
@@ -72,10 +73,12 @@ export class TelegramNotifierService {
         body: JSON.stringify(payload),
         signal: abortController.signal
       })
-    } catch {
-      return null
+    } catch (error) {
+      const detail: string = error instanceof Error ? error.stack ?? error.message : String(error)
+      this.logger.warn('telegram_fetch_error', detail)
     } finally {
       clearTimeout(timer)
     }
+    return response
   }
 }
