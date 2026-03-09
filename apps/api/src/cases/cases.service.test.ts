@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import type { CacheService } from '../cache/cache.service'
 import type { PrismaService } from '../database/prisma.service'
+import type { TelegramNotifierService } from '../notifications/telegram-notifier.service'
 import type { TurnstileService } from '../turnstile/turnstile.service'
 import { CasesService } from './cases.service'
 
@@ -32,7 +33,15 @@ describe('CasesService', () => {
     const turnstile: Pick<TurnstileService, 'verify'> = {
       verify: async () => true
     }
-    const service = new CasesService(prisma as PrismaService, cache as CacheService, turnstile as TurnstileService)
+    const notifier: Pick<TelegramNotifierService, 'notifyNewCase'> = {
+      notifyNewCase: async () => undefined
+    }
+    const service = new CasesService(
+      prisma as PrismaService,
+      cache as CacheService,
+      turnstile as TurnstileService,
+      notifier as TelegramNotifierService
+    )
     const created = await service.createCase({
       bankIdentifier: '12345678',
       bankName: 'Nguyen Van A',

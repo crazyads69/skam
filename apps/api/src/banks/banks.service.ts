@@ -108,6 +108,7 @@ export class BanksService {
     const lookupSupported: 0 | 1 =
       Number(input.lookupSupported ?? 0) === 1 ? 1 : 0;
     if (!id || !code || !name || !bin || !shortName) return null;
+    if (!/^\d{6}$/.test(bin)) return null;
     return {
       id,
       code,

@@ -19,6 +19,9 @@
     "db:push": "bun run --cwd apps/api prisma:push",
     "db:studio": "bun run --cwd apps/api prisma:studio"
   },
+  "engines": {
+    "bun": "1.x"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "eslint": "^9.17.0",

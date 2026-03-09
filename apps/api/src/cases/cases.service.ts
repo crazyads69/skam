@@ -4,6 +4,7 @@ import { CaseStatus, SocialPlatform } from '@skam/shared/src/types'
 import { createHash } from 'node:crypto'
 import { CacheService } from '../cache/cache.service'
 import { PrismaService } from '../database/prisma.service'
+import { TelegramNotifierService } from '../notifications/telegram-notifier.service'
 import { TurnstileService } from '../turnstile/turnstile.service'
 import { CreateCaseDto } from './dto/create-case.dto'
 import { SearchCaseDto } from './dto/search-case.dto'
@@ -15,7 +16,8 @@ export class CasesService {
   public constructor(
     private readonly prisma: PrismaService,
     private readonly cache: CacheService,
-    private readonly turnstile: TurnstileService
+    private readonly turnstile: TurnstileService,
+    private readonly telegramNotifier: TelegramNotifierService
   ) {}
 
   public async createCase(payload: CreateCaseDto, requesterIp?: string): Promise<ScamCase> {
@@ -67,7 +69,9 @@ export class CasesService {
         socialLinks: true
       }
     })
-    return this.mapCase(created)
+    const result: ScamCase = this.mapCase(created)
+    await this.telegramNotifier.notifyNewCase(result)
+    return result
   }
 
   public async searchCases(query: SearchCaseDto): Promise<SearchResult> {

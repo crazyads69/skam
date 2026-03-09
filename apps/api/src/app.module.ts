@@ -7,6 +7,7 @@ import { CacheModule } from './cache/cache.module'
 import { CasesModule } from './cases/cases.module'
 import { DatabaseModule } from './database/database.module'
 import { HealthModule } from './health/health.module'
+import { NotificationsModule } from './notifications/notifications.module'
 import { ProfilesModule } from './profiles/profiles.module'
 import { StorageModule } from './storage/storage.module'
 import { TurnstileModule } from './turnstile/turnstile.module'
@@ -16,6 +17,7 @@ import { TurnstileModule } from './turnstile/turnstile.module'
     DatabaseModule,
     CacheModule,
     TurnstileModule,
+    NotificationsModule,
     HealthModule,
     CasesModule,
     ProfilesModule,

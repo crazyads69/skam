@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
+    "dev": "bun --bun next dev --turbopack",
+    "build": "bun --bun next build",
+    "start": "bun --bun next start",
     "lint": "echo \"web lint skipped\"",
     "typecheck": "tsc --noEmit",
     "test": "echo \"web tests not implemented yet\""
