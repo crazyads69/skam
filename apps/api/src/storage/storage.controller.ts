@@ -1,13 +1,9 @@
 import { Body, Controller, HttpException, Post, Req } from "@nestjs/common";
 import type { ApiResponse } from "@skam/shared/src/types";
 import { CacheService } from "../cache/cache.service";
+import { resolveRequestIdentifier } from "../common/request-identifier";
 import { UploadPresignDto } from "./dto/upload-presign.dto";
 import { StorageService } from "./storage.service";
-
-interface RequestLike {
-  ip?: string;
-  headers: Record<string, string | string[] | undefined>;
-}
 
 @Controller("upload")
 export class StorageController {
@@ -19,16 +15,11 @@ export class StorageController {
   @Post("presign")
   public async presign(
     @Body() payload: UploadPresignDto,
-    @Req() request: RequestLike,
+    @Req() request: { ip?: string; headers: Record<string, string | string[] | undefined> },
   ): Promise<
     ApiResponse<Awaited<ReturnType<StorageService["presignUpload"]>>>
   > {
-    const forwardedFor: string | string[] | undefined =
-      request.headers["x-forwarded-for"];
-    const identifier: string =
-      typeof forwardedFor === "string"
-        ? (forwardedFor.split(",")[0]?.trim() ?? request.ip ?? "unknown")
-        : (request.ip ?? "unknown");
+    const identifier: string = resolveRequestIdentifier(request);
     const allowed: boolean = await this.cacheService.fixedWindowLimit(
       `ratelimit:upload:${identifier}`,
       10,

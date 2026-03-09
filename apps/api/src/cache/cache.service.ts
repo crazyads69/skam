@@ -1,9 +1,10 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { Redis } from "@upstash/redis";
 
 @Injectable()
 export class CacheService {
   private readonly redis: Redis | null;
+  private readonly logger = new Logger(CacheService.name);
 
   public constructor() {
     const redisUrl: string | undefined = process.env.UPSTASH_REDIS_REST_URL;
@@ -16,7 +17,13 @@ export class CacheService {
 
   public async get<T>(key: string): Promise<T | null> {
     if (!this.redis) return null;
-    return this.redis.get<T>(key);
+    try {
+      return await this.redis.get<T>(key);
+    } catch (error) {
+      const reason: string = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`cache_get_error key=${key} reason=${reason}`);
+      return null;
+    }
   }
 
   public async set(
@@ -25,12 +32,22 @@ export class CacheService {
     ttlSeconds: number,
   ): Promise<void> {
     if (!this.redis) return;
-    await this.redis.set(key, value, { ex: ttlSeconds });
+    try {
+      await this.redis.set(key, value, { ex: ttlSeconds });
+    } catch (error) {
+      const reason: string = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`cache_set_error key=${key} reason=${reason}`);
+    }
   }
 
   public async del(key: string): Promise<void> {
     if (!this.redis) return;
-    await this.redis.del(key);
+    try {
+      await this.redis.del(key);
+    } catch (error) {
+      const reason: string = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`cache_del_error key=${key} reason=${reason}`);
+    }
   }
 
   public async fixedWindowLimit(
@@ -39,8 +56,14 @@ export class CacheService {
     windowSeconds: number,
   ): Promise<boolean> {
     if (!this.redis) return true;
-    const count: number = await this.redis.incr(key);
-    if (count === 1) await this.redis.expire(key, windowSeconds);
-    return count <= limit;
+    try {
+      const count: number = await this.redis.incr(key);
+      if (count === 1) await this.redis.expire(key, windowSeconds);
+      return count <= limit;
+    } catch (error) {
+      const reason: string = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`cache_limit_error key=${key} reason=${reason}`);
+      return true;
+    }
   }
 }

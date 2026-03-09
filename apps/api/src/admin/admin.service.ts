@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import type { PaginatedResponse, ScamCase } from '@skam/shared/src/types'
 import { CaseStatus, SocialPlatform } from '@skam/shared/src/types'
 import { PrismaService } from '../database/prisma.service'
@@ -36,17 +36,30 @@ export class AdminService {
   public async approveCase(id: string, actor: string, payload: ApproveCaseDto): Promise<ScamCase> {
     const existing = await this.prisma.scamCase.findUnique({ where: { id }, include: { socialLinks: true, evidenceFiles: true } })
     if (!existing) throw new NotFoundException('Không tìm thấy vụ việc')
-    const updated = await this.prisma.scamCase.update({
-      where: { id },
+    if (existing.status !== CaseStatus.PENDING) {
+      throw new BadRequestException('Chỉ có thể duyệt vụ việc đang chờ xử lý')
+    }
+    const result = await this.prisma.scamCase.updateMany({
+      where: {
+        id,
+        status: CaseStatus.PENDING
+      },
       data: {
         status: CaseStatus.APPROVED,
         approvedAt: new Date(),
         approvedBy: actor,
         rejectionReason: null,
         refinedDescription: payload.refinedDescription ?? existing.refinedDescription
-      },
+      }
+    })
+    if (result.count === 0) {
+      throw new BadRequestException('Vụ việc đã được xử lý bởi tác vụ khác')
+    }
+    const updated = await this.prisma.scamCase.findUnique({
+      where: { id },
       include: { socialLinks: true, evidenceFiles: true }
     })
+    if (!updated) throw new NotFoundException('Không tìm thấy vụ việc')
     await this.rebuildProfileAndStats(updated.bankIdentifier, updated.bankCode)
     return this.mapCase(updated)
   }
@@ -57,16 +70,29 @@ export class AdminService {
       include: { socialLinks: true, evidenceFiles: true }
     })
     if (!existing) throw new NotFoundException('Không tìm thấy vụ việc')
-    const updated = await this.prisma.scamCase.update({
-      where: { id },
+    if (existing.status !== CaseStatus.PENDING) {
+      throw new BadRequestException('Chỉ có thể từ chối vụ việc đang chờ xử lý')
+    }
+    const result = await this.prisma.scamCase.updateMany({
+      where: {
+        id,
+        status: CaseStatus.PENDING
+      },
       data: {
         status: CaseStatus.REJECTED,
         approvedAt: null,
         approvedBy: actor,
         rejectionReason: payload.reason
-      },
+      }
+    })
+    if (result.count === 0) {
+      throw new BadRequestException('Vụ việc đã được xử lý bởi tác vụ khác')
+    }
+    const updated = await this.prisma.scamCase.findUnique({
+      where: { id },
       include: { socialLinks: true, evidenceFiles: true }
     })
+    if (!updated) throw new NotFoundException('Không tìm thấy vụ việc')
     await this.rebuildProfileAndStats(updated.bankIdentifier, updated.bankCode)
     return this.mapCase(updated)
   }
@@ -77,6 +103,9 @@ export class AdminService {
       include: { socialLinks: true, evidenceFiles: true }
     })
     if (!existing) throw new NotFoundException('Không tìm thấy vụ việc')
+    if (existing.status === CaseStatus.REJECTED) {
+      throw new BadRequestException('Không thể chỉnh sửa vụ việc đã từ chối')
+    }
     const updated = await this.prisma.scamCase.update({
       where: { id },
       data: {

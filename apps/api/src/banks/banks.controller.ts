@@ -1,12 +1,8 @@
 import { Controller, Get, HttpException, Query, Req } from '@nestjs/common'
 import type { ApiResponse } from '@skam/shared/src/types'
+import { resolveRequestIdentifier } from '../common/request-identifier'
 import { CacheService } from '../cache/cache.service'
 import { BanksService } from './banks.service'
-
-interface RequestLike {
-  ip?: string
-  headers: Record<string, string | string[] | undefined>
-}
 
 @Controller('banks')
 export class BanksController {
@@ -16,7 +12,7 @@ export class BanksController {
   ) {}
 
   @Get()
-  public async listBanks(@Req() request: RequestLike): Promise<ApiResponse<Awaited<ReturnType<BanksService['listBanks']>>>> {
+  public async listBanks(@Req() request: { ip?: string; headers: Record<string, string | string[] | undefined> }): Promise<ApiResponse<Awaited<ReturnType<BanksService['listBanks']>>>> {
     await this.enforceReadLimit(request)
     const data = await this.banksService.listBanks()
     return { success: true, data }
@@ -24,7 +20,7 @@ export class BanksController {
 
   @Get('search')
   public async searchBanks(
-    @Req() request: RequestLike,
+    @Req() request: { ip?: string; headers: Record<string, string | string[] | undefined> },
     @Query('q') query: string
   ): Promise<ApiResponse<Awaited<ReturnType<BanksService['searchBanks']>>>> {
     await this.enforceReadLimit(request)
@@ -32,12 +28,8 @@ export class BanksController {
     return { success: true, data }
   }
 
-  private async enforceReadLimit(request: RequestLike): Promise<void> {
-    const forwardedFor: string | string[] | undefined = request.headers['x-forwarded-for']
-    const identifier: string =
-      typeof forwardedFor === 'string'
-        ? forwardedFor.split(',')[0]?.trim() ?? request.ip ?? 'unknown'
-        : request.ip ?? 'unknown'
+  private async enforceReadLimit(request: { ip?: string; headers: Record<string, string | string[] | undefined> }): Promise<void> {
+    const identifier: string = resolveRequestIdentifier(request)
     const allowed: boolean = await this.cacheService.fixedWindowLimit(`ratelimit:banks:${identifier}`, 100, 60)
     if (!allowed) throw new HttpException('Vượt giới hạn truy vấn', 429)
   }

@@ -13,12 +13,21 @@ type SearchResult = PaginatedResponse<ScamCase>
 
 @Injectable()
 export class CasesService {
+  private readonly hashSalt: string
+
   public constructor(
     private readonly prisma: PrismaService,
     private readonly cache: CacheService,
     private readonly turnstile: TurnstileService,
     private readonly telegramNotifier: TelegramNotifierService
-  ) {}
+  ) {
+    const envSalt: string = (process.env.HASH_SALT ?? '').trim()
+    const requireHashSalt: boolean = (process.env.REQUIRE_HASH_SALT ?? 'false') === 'true'
+    if (requireHashSalt && !envSalt) {
+      throw new Error('HASH_SALT is required when REQUIRE_HASH_SALT=true')
+    }
+    this.hashSalt = envSalt || 'skam-salt'
+  }
 
   public async createCase(payload: CreateCaseDto, requesterIp?: string): Promise<ScamCase> {
     const isLimited: boolean = await this.cache.fixedWindowLimit(`ratelimit:cases:${requesterIp ?? 'unknown'}`, 5, 60 * 60 * 24)
@@ -211,7 +220,6 @@ export class CasesService {
   }
 
   private hashValue(value: string): string {
-    const salt: string = process.env.HASH_SALT ?? 'skam-salt'
-    return createHash('sha256').update(`${salt}:${value}`).digest('hex')
+    return createHash('sha256').update(`${this.hashSalt}:${value}`).digest('hex')
   }
 }

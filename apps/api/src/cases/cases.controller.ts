@@ -1,13 +1,9 @@
 import { Body, Controller, Get, Param, Post, Query, Req } from "@nestjs/common";
 import type { ApiResponse } from "@skam/shared/src/types";
+import { resolveRequestIdentifier } from "../common/request-identifier";
 import { CreateCaseDto } from "./dto/create-case.dto";
 import { SearchCaseDto } from "./dto/search-case.dto";
 import { CasesService } from "./cases.service";
-
-interface RequestLike {
-  ip?: string;
-  headers: Record<string, string | string[] | undefined>;
-}
 
 @Controller("cases")
 export class CasesController {
@@ -16,14 +12,9 @@ export class CasesController {
   @Post()
   public async createCase(
     @Body() payload: CreateCaseDto,
-    @Req() request: RequestLike,
+    @Req() request: { ip?: string; headers: Record<string, string | string[] | undefined> },
   ): Promise<ApiResponse<Awaited<ReturnType<CasesService["createCase"]>>>> {
-    const forwardedFor: string | string[] | undefined =
-      request.headers["x-forwarded-for"];
-    const candidateIp: string | undefined =
-      typeof forwardedFor === "string"
-        ? forwardedFor.split(",")[0]?.trim()
-        : request.ip;
+    const candidateIp: string = resolveRequestIdentifier(request);
     const data = await this.casesService.createCase(payload, candidateIp);
     return { success: true, data };
   }

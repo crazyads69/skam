@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -38,12 +39,26 @@ export class AdminController {
     @Query("page") page?: string,
     @Query("pageSize") pageSize?: string,
   ): Promise<Awaited<ReturnType<AdminService["listCases"]>>> {
+    const allowedStatuses: CaseStatus[] = [
+      CaseStatus.PENDING,
+      CaseStatus.APPROVED,
+      CaseStatus.REJECTED,
+    ];
+    if (status && !allowedStatuses.includes(status)) {
+      throw new BadRequestException("Trạng thái không hợp lệ");
+    }
     const parsedPage: number = Number(page ?? "1");
     const parsedPageSize: number = Number(pageSize ?? "20");
+    const safePage: number =
+      Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : Math.floor(parsedPage);
+    const safePageSize: number =
+      Number.isNaN(parsedPageSize) || parsedPageSize < 1
+        ? 20
+        : Math.min(100, Math.floor(parsedPageSize));
     return this.adminService.listCases(
       status,
-      Number.isNaN(parsedPage) ? 1 : parsedPage,
-      Number.isNaN(parsedPageSize) ? 20 : parsedPageSize,
+      safePage,
+      safePageSize,
     );
   }
 
