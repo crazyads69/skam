@@ -1,9 +1,13 @@
-import { IsUUID } from "class-validator";
+import { IsString, MaxLength, MinLength } from "class-validator";
 
 export class PublicViewUrlDto {
-  @IsUUID()
+  @IsString()
+  @MinLength(10)
+  @MaxLength(40)
   public caseId!: string;
 
-  @IsUUID()
+  @IsString()
+  @MinLength(10)
+  @MaxLength(40)
   public evidenceId!: string;
 }

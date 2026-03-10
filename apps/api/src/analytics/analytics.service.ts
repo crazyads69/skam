@@ -35,12 +35,21 @@ export class AnalyticsService {
         _sum: { amount: true }
       })
     ])
-    return {
+    const computed: AnalyticsSummary = {
       totalCases,
       totalApprovedCases,
       totalPendingCases,
       totalScammerProfiles,
       totalScamAmount: approvedAmountAgg._sum.amount ?? 0
     }
+    await this.prisma.systemStats.upsert({
+      where: { id: 'singleton' },
+      create: {
+        id: 'singleton',
+        ...computed
+      },
+      update: computed
+    })
+    return computed
   }
 }

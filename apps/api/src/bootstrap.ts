@@ -1,5 +1,6 @@
 import type { INestApplication } from '@nestjs/common'
 import { ValidationPipe } from '@nestjs/common'
+import { AllExceptionsFilter } from './common/all-exceptions.filter'
 import helmet from 'helmet'
 
 export function applyAppRuntime(app: INestApplication): void {
@@ -11,6 +12,7 @@ export function applyAppRuntime(app: INestApplication): void {
   app.use(helmet())
   app.setGlobalPrefix('api/v1')
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
+  app.useGlobalFilters(new AllExceptionsFilter())
   const corsOrigins: string[] = (corsOriginRaw ?? 'http://localhost:3000')
     .split(',')
     .map((item) => item.trim())

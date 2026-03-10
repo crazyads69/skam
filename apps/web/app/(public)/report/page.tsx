@@ -2,46 +2,28 @@
 
 import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { FormProvider, useForm } from "react-hook-form";
 import { SocialPlatform } from "@skam/shared/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Upload } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { BankAccountFields } from "@/components/report/bank-account-fields";
+import { CaseDetailsFields } from "@/components/report/case-details-fields";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+  EvidenceUploader,
+  type UploadItem,
+} from "@/components/report/evidence-uploader";
+import {
+  reportSchema,
+  type ReportFormValues,
+} from "@/components/report/report-form.schema";
+import { SocialLinksEditor } from "@/components/report/social-links-editor";
+import { ReportFormSummary } from "@/components/report/report-form-summary";
+import { Button } from "@/components/ui/button";
+import { GlassCard } from "@/components/ui/glass-card";
 import { createCase, getBanks, presignUpload } from "@/lib/api";
+import { normalizeUserText } from "@/lib/sanitize";
 
-const reportSchema = z.object({
-  bankIdentifier: z.string().min(6).max(40),
-  bankName: z.string().min(2).max(120),
-  bankCode: z.string().min(2).max(10),
-  amount: z.coerce.number().min(0).optional(),
-  scammerName: z.string().min(2).max(120).optional().or(z.literal("")),
-  originalDescription: z.string().min(50).max(5000),
-});
-
-type ReportFormValues = z.infer<typeof reportSchema>;
-type UploadItem = {
-  fileName: string;
-  fileSize: number;
-  fileType: string;
-  fileKey: string;
-  fileHash: string;
-};
-type SocialLinkInput = {
-  platform: SocialPlatform;
-  url: string;
-  username: string;
-};
+const maxEvidenceFiles: number = 5;
+const maxEvidenceFileSize: number = 100 * 1024 * 1024;
 
 interface TurnstileWindow extends Window {
   turnstile?: {
@@ -66,27 +48,20 @@ async function sha256(file: File): Promise<string> {
 }
 
 export default function ReportPage(): ReactElement {
-  const [uploaded, setUploaded] = useState<UploadItem[]>([]);
   const [status, setStatus] = useState<string>("");
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [banks, setBanks] = useState<
     Array<{ code: string; shortName: string }>
   >([]);
   const [turnstileToken, setTurnstileToken] = useState<string>("");
-  const [socialLinks, setSocialLinks] = useState<SocialLinkInput[]>([]);
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-    setValue,
-    watch,
-  } = useForm<ReportFormValues>({
+  const methods = useForm<ReportFormValues>({
     resolver: zodResolver(reportSchema),
     defaultValues: {
       bankCode: "VCB",
+      socialLinks: [],
+      evidenceFiles: [],
     },
   });
+  const { handleSubmit, reset, formState, getValues } = methods;
 
   useEffect(() => {
     getBanks()
@@ -126,12 +101,23 @@ export default function ReportPage(): ReactElement {
     };
   }, []);
 
-  async function onUploadFiles(files: FileList | null): Promise<void> {
-    if (!files?.length) return;
-    const list = Array.from(files).slice(0, 5);
+  async function onUploadFiles(files: FileList | null): Promise<UploadItem[]> {
+    if (!files?.length) return [];
+    const existingCount: number = getValues("evidenceFiles").length;
+    const remainingSlots: number = Math.max(
+      0,
+      maxEvidenceFiles - existingCount,
+    );
+    if (remainingSlots === 0) {
+      throw new Error("Chỉ được tải tối đa 5 tệp");
+    }
+    const list = Array.from(files).slice(0, remainingSlots);
     const nextUploads: UploadItem[] = [];
     setStatus("Đang tải bằng chứng...");
     for (const file of list) {
+      if (file.size > maxEvidenceFileSize) {
+        throw new Error(`Tệp ${file.name} vượt quá 100MB`);
+      }
       const fileHash = await sha256(file);
       const presign = await presignUpload({
         fileName: file.name,
@@ -158,33 +144,32 @@ export default function ReportPage(): ReactElement {
         fileHash,
       });
     }
-    setUploaded((prev) => [...prev, ...nextUploads].slice(0, 5));
     setStatus("Tải bằng chứng thành công");
+    return nextUploads;
   }
 
   async function onSubmit(values: ReportFormValues): Promise<void> {
-    setIsSubmitting(true);
     setStatus("");
     try {
       if (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken) {
         throw new Error("Vui lòng xác minh Turnstile trước khi gửi");
       }
       const response = await createCase({
-        bankIdentifier: values.bankIdentifier.trim(),
-        bankName: values.bankName.trim(),
-        bankCode: values.bankCode.trim().toUpperCase(),
+        bankIdentifier: normalizeUserText(values.bankIdentifier),
+        bankName: normalizeUserText(values.bankName),
+        bankCode: normalizeUserText(values.bankCode).toUpperCase(),
         amount: values.amount,
-        scammerName: values.scammerName || undefined,
-        originalDescription: values.originalDescription.trim(),
+        scammerName: normalizeUserText(values.scammerName ?? "") || undefined,
+        originalDescription: normalizeUserText(values.originalDescription),
         turnstileToken: turnstileToken || undefined,
-        socialLinks: socialLinks
+        socialLinks: values.socialLinks
           .map((item) => ({
             platform: item.platform,
-            url: item.url.trim(),
-            username: item.username.trim() || undefined,
+            url: normalizeUserText(item.url),
+            username: normalizeUserText(item.username) || undefined,
           }))
           .filter((item) => item.url),
-        evidenceFiles: uploaded.map((item) => ({
+        evidenceFiles: values.evidenceFiles.map((item) => ({
           fileType: item.fileType.startsWith("image/")
             ? "chat_screenshot"
             : "other",
@@ -198,229 +183,61 @@ export default function ReportPage(): ReactElement {
         throw new Error(response.error ?? "Gửi báo cáo thất bại");
       }
       setStatus("Gửi báo cáo thành công, vụ việc đang chờ duyệt");
-      setUploaded([]);
-      setSocialLinks([]);
       reset({
-        bankCode: watch("bankCode"),
+        bankIdentifier: "",
+        bankName: "",
+        bankCode: values.bankCode,
+        amount: undefined,
+        scammerName: "",
+        originalDescription: "",
+        socialLinks: [],
+        evidenceFiles: [],
       });
     } catch (error) {
       setStatus(
         error instanceof Error ? error.message : "Gửi báo cáo thất bại",
       );
-    } finally {
-      setIsSubmitting(false);
     }
   }
 
   return (
     <main className="skam-container py-8">
-      <Card className="mx-auto max-w-3xl p-6">
+      <GlassCard className="mx-auto max-w-3xl p-6">
         <h1 className="mb-2 text-2xl font-semibold">
           Báo cáo tài khoản lừa đảo
         </h1>
         <p className="mb-6 text-sm text-[var(--text-secondary)]">
           Thông tin sẽ được kiểm duyệt trước khi công khai.
         </p>
-        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
-          <p className="text-sm font-medium text-foreground">
-            Bước 1: Thông tin tài khoản
-          </p>
-          <Input placeholder="Số tài khoản" {...register("bankIdentifier")} />
-          {errors.bankIdentifier ? (
-            <p className="text-xs text-danger">
-              {errors.bankIdentifier.message}
+        <FormProvider {...methods}>
+          <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
+            <BankAccountFields banks={banks} />
+            <CaseDetailsFields />
+            <SocialLinksEditor />
+            <p className="mt-2 text-sm font-medium text-foreground">
+              Bước 3: Bằng chứng và xác minh
             </p>
-          ) : null}
-
-          <Input placeholder="Tên chủ tài khoản" {...register("bankName")} />
-          {errors.bankName ? (
-            <p className="text-xs text-danger">{errors.bankName.message}</p>
-          ) : null}
-
-          <input type="hidden" {...register("bankCode")} />
-          <Select
-            value={watch("bankCode") || "VCB"}
-            onValueChange={(value: string) =>
-              setValue("bankCode", value, { shouldValidate: true })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Chọn ngân hàng" />
-            </SelectTrigger>
-            <SelectContent>
-              {banks.map((bank) => (
-                <SelectItem key={bank.code} value={bank.code}>
-                  {bank.shortName} ({bank.code})
-                </SelectItem>
-              ))}
-              {banks.length === 0 ? (
-                <SelectItem value="VCB">VCB</SelectItem>
-              ) : null}
-            </SelectContent>
-          </Select>
-
-          <p className="mt-2 text-sm font-medium text-foreground">
-            Bước 2: Chi tiết vụ việc
-          </p>
-          <Input
-            type="number"
-            min={0}
-            placeholder="Số tiền bị lừa (VND)"
-            {...register("amount")}
-          />
-          <Input
-            placeholder="Tên kẻ lừa đảo (nếu có)"
-            {...register("scammerName")}
-          />
-          <Textarea
-            rows={6}
-            placeholder="Mô tả vụ việc chi tiết (tối thiểu 50 ký tự)"
-            {...register("originalDescription")}
-          />
-          {errors.originalDescription ? (
-            <p className="text-xs text-danger">
-              {errors.originalDescription.message}
-            </p>
-          ) : null}
-          <div className="grid gap-2">
-            <p className="text-sm font-medium text-foreground">
-              Liên kết mạng xã hội liên quan
-            </p>
-            {socialLinks.length === 0 ? (
-              <p className="text-xs text-[var(--text-tertiary)]">
-                Chưa có liên kết nào.
-              </p>
-            ) : null}
-            {socialLinks.map((item, index) => (
-              <div
-                key={`${item.platform}-${index}`}
-                className="grid gap-2 rounded-lg border border-border bg-surface-1 p-3 sm:grid-cols-[140px_1fr_1fr_auto]"
-              >
-                <Select
-                  value={item.platform}
-                  onValueChange={(value: string) => {
-                    const platform = value as SocialPlatform;
-                    setSocialLinks((prev) =>
-                      prev.map((entry, idx) =>
-                        idx === index ? { ...entry, platform } : entry,
-                      ),
-                    );
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.values(SocialPlatform).map((platform) => (
-                      <SelectItem key={platform} value={platform}>
-                        {platform}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
-                  placeholder="https://..."
-                  value={item.url}
-                  onChange={(event) =>
-                    setSocialLinks((prev) =>
-                      prev.map((entry, idx) =>
-                        idx === index
-                          ? { ...entry, url: event.target.value }
-                          : entry,
-                      ),
-                    )
-                  }
-                />
-                <Input
-                  placeholder="username (tuỳ chọn)"
-                  value={item.username}
-                  onChange={(event) =>
-                    setSocialLinks((prev) =>
-                      prev.map((entry, idx) =>
-                        idx === index
-                          ? { ...entry, username: event.target.value }
-                          : entry,
-                      ),
-                    )
-                  }
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() =>
-                    setSocialLinks((prev) =>
-                      prev.filter((_, idx) => idx !== index),
-                    )
-                  }
-                >
-                  Xoá
-                </Button>
-              </div>
-            ))}
-            <Button
-              type="button"
-              variant="neon-outline"
-              onClick={() =>
-                setSocialLinks((prev) => [
-                  ...prev,
-                  { platform: SocialPlatform.FACEBOOK, url: "", username: "" },
-                ])
-              }
-            >
-              Thêm liên kết
-            </Button>
-          </div>
-
-          <p className="mt-2 text-sm font-medium text-foreground">
-            Bước 3: Bằng chứng và xác minh
-          </p>
-          <label className="block rounded-lg border border-dashed border-border p-4 text-sm text-[var(--text-secondary)]">
-            <span className="mb-2 inline-flex items-center gap-2 text-foreground">
-              <Upload className="size-4 text-neon" />
-              Tải bằng chứng (tối đa 5 tệp)
-            </span>
-            <Input
-              type="file"
-              accept="image/*,video/mp4,video/webm,audio/mpeg,audio/wav,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              multiple
-              className="mt-2 block w-full"
-              onChange={(event) => {
-                onUploadFiles(event.target.files).catch((error) =>
-                  setStatus(
-                    error instanceof Error ? error.message : "Tải tệp thất bại",
-                  ),
-                );
-              }}
+            <EvidenceUploader
+              onUploadFiles={onUploadFiles}
+              onError={(message) => setStatus(message)}
             />
-          </label>
-          {uploaded.length > 0 ? (
-            <ul className="grid gap-1 text-xs text-[var(--text-tertiary)]">
-              {uploaded.map((item) => (
-                <li key={item.fileKey}>
-                  {item.fileName} · {(item.fileSize / 1024).toFixed(1)} KB
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          <div id="turnstile-widget" />
+            <div id="turnstile-widget" />
 
-          <Button
-            type="submit"
-            variant="neon"
-            size="lg"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Đang gửi..." : "Gửi báo cáo"}
-          </Button>
-        </form>
-        {status ? (
-          <p className="mt-4 text-sm text-[var(--text-secondary)]">{status}</p>
-        ) : null}
-        <p className="mt-3 text-xs text-[var(--text-tertiary)]">
-          Nền tảng hỗ trợ liên kết mạng xã hội loại:{" "}
-          {Object.values(SocialPlatform).join(", ")}.
-        </p>
-      </Card>
+            <Button
+              type="submit"
+              variant="neon"
+              size="lg"
+              disabled={formState.isSubmitting}
+            >
+              {formState.isSubmitting ? "Đang gửi..." : "Gửi báo cáo"}
+            </Button>
+          </form>
+        </FormProvider>
+        <ReportFormSummary
+          status={status}
+          platformsLabel={Object.values(SocialPlatform).join(", ")}
+        />
+      </GlassCard>
     </main>
   );
 }

@@ -1,4 +1,8 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { CaseStatus } from "@skam/shared/src/types";
@@ -47,11 +51,37 @@ export class StorageService {
   };
 
   private readonly expiresInSeconds: number = 60 * 15;
+  private readonly bucketName: string;
+  private readonly r2Endpoint: string;
+  private readonly r2AccessKeyId: string;
+  private readonly r2SecretAccessKey: string;
+  private readonly s3Client: S3Client;
 
   public constructor(
     private readonly prisma: PrismaService,
     private readonly cache: CacheService,
-  ) {}
+  ) {
+    const endpoint: string | undefined = process.env.R2_ENDPOINT;
+    const accessKeyId: string | undefined = process.env.R2_ACCESS_KEY_ID;
+    const secretAccessKey: string | undefined =
+      process.env.R2_SECRET_ACCESS_KEY;
+    if (!endpoint || !accessKeyId || !secretAccessKey) {
+      throw new Error("Thiếu cấu hình lưu trữ R2");
+    }
+    this.bucketName = process.env.R2_BUCKET_NAME ?? "skam";
+    this.r2Endpoint = endpoint;
+    this.r2AccessKeyId = accessKeyId;
+    this.r2SecretAccessKey = secretAccessKey;
+    this.s3Client = new S3Client({
+      region: "auto",
+      endpoint: this.r2Endpoint,
+      forcePathStyle: false,
+      credentials: {
+        accessKeyId: this.r2AccessKeyId,
+        secretAccessKey: this.r2SecretAccessKey,
+      },
+    });
+  }
 
   public async presignUpload(
     payload: UploadPresignDto,
@@ -110,30 +140,13 @@ export class StorageService {
         throw new BadRequestException("Tệp đã tồn tại trong hệ thống");
       }
     }
-    const bucketName: string = process.env.R2_BUCKET_NAME ?? "skam";
-    const endpoint: string | undefined = process.env.R2_ENDPOINT;
-    const accessKeyId: string | undefined = process.env.R2_ACCESS_KEY_ID;
-    const secretAccessKey: string | undefined =
-      process.env.R2_SECRET_ACCESS_KEY;
-    if (!endpoint || !accessKeyId || !secretAccessKey) {
-      throw new BadRequestException("Thiếu cấu hình lưu trữ R2");
-    }
-    const client: S3Client = new S3Client({
-      region: "auto",
-      endpoint,
-      forcePathStyle: false,
-      credentials: {
-        accessKeyId,
-        secretAccessKey,
-      },
-    });
     const command = new PutObjectCommand({
-      Bucket: bucketName,
+      Bucket: this.bucketName,
       Key: fileKey,
       ContentType: payload.contentType,
       ContentLength: payload.fileSize,
     });
-    const uploadUrl: string = await getSignedUrl(client, command, {
+    const uploadUrl: string = await getSignedUrl(this.s3Client, command, {
       expiresIn: this.expiresInSeconds,
       signableHeaders: new Set(["content-type"]),
     });
@@ -148,28 +161,11 @@ export class StorageService {
     if (!fileKey.startsWith("evidence/")) {
       throw new BadRequestException("Đường dẫn tệp không hợp lệ");
     }
-    const bucketName: string = process.env.R2_BUCKET_NAME ?? "skam";
-    const endpoint: string | undefined = process.env.R2_ENDPOINT;
-    const accessKeyId: string | undefined = process.env.R2_ACCESS_KEY_ID;
-    const secretAccessKey: string | undefined =
-      process.env.R2_SECRET_ACCESS_KEY;
-    if (!endpoint || !accessKeyId || !secretAccessKey) {
-      throw new BadRequestException("Thiếu cấu hình lưu trữ R2");
-    }
-    const client: S3Client = new S3Client({
-      region: "auto",
-      endpoint,
-      forcePathStyle: false,
-      credentials: {
-        accessKeyId,
-        secretAccessKey,
-      },
-    });
     const command = new GetObjectCommand({
-      Bucket: bucketName,
+      Bucket: this.bucketName,
       Key: fileKey,
     });
-    const viewUrl: string = await getSignedUrl(client, command, {
+    const viewUrl: string = await getSignedUrl(this.s3Client, command, {
       expiresIn: this.expiresInSeconds,
     });
     return {

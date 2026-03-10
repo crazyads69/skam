@@ -1,9 +1,9 @@
 import { Type } from 'class-transformer'
-import { IsArray, IsNumber, IsOptional, IsString, IsUrl, Max, MaxLength, Min, MinLength, ValidateNested } from 'class-validator'
+import { IsArray, IsEnum, IsNumber, IsOptional, IsString, IsUrl, Max, MaxLength, Min, MinLength, ValidateNested } from 'class-validator'
 import { SocialPlatform } from '@skam/shared/src/types'
 
 export class CreateSocialLinkDto {
-  @IsString()
+  @IsEnum(SocialPlatform)
   public platform!: SocialPlatform
 
   @IsUrl()

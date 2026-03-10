@@ -14,6 +14,9 @@ export const apiUrl: string = getApiBaseUrl();
 interface ApiRequestInit extends Omit<RequestInit, "body"> {
   body?: unknown;
   token?: string;
+  next?: {
+    revalidate: number;
+  };
 }
 
 async function apiRequest<T>(path: string, init?: ApiRequestInit): Promise<T> {
@@ -31,7 +34,7 @@ async function apiRequest<T>(path: string, init?: ApiRequestInit): Promise<T> {
     ...init,
     headers,
     body: init?.body ? JSON.stringify(init.body) : undefined,
-    cache: "no-store",
+    cache: init?.next ? undefined : "no-store",
   });
   if (!response.ok) {
     const payload: unknown = await response.json().catch(() => null);
@@ -46,7 +49,9 @@ async function apiRequest<T>(path: string, init?: ApiRequestInit): Promise<T> {
       typeof messageField === "string"
         ? messageField
         : Array.isArray(messageField)
-          ? messageField.filter((item): item is string => typeof item === "string").join(", ")
+          ? messageField
+              .filter((item): item is string => typeof item === "string")
+              .join(", ")
           : `HTTP ${response.status}`;
     throw new Error(message);
   }
@@ -161,7 +166,9 @@ export async function getSummary(): Promise<
     totalScamAmount: number;
   }>
 > {
-  return apiRequest("/analytics/summary");
+  return apiRequest("/analytics/summary", {
+    next: { revalidate: 60 },
+  });
 }
 
 export async function getRecentCases(
@@ -172,13 +179,27 @@ export async function getRecentCases(
     page: String(page),
     pageSize: String(pageSize),
   });
-  return apiRequest(`/cases/recent?${searchParams.toString()}`);
+  return apiRequest(`/cases/recent?${searchParams.toString()}`, {
+    next: { revalidate: 60 },
+  });
 }
 
 export async function getAdminMe(
   token: string,
 ): Promise<ApiResponse<{ username: string; provider: "github" }>> {
   return apiRequest("/auth/me", { token });
+}
+
+export async function exchangeAdminCode(code: string): Promise<
+  ApiResponse<{
+    token: string;
+    principal: { username: string; provider: "github" };
+  }>
+> {
+  return apiRequest("/auth/code/exchange", {
+    method: "POST",
+    body: { code },
+  });
 }
 
 export async function listAdminCases(

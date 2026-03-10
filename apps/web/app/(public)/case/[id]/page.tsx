@@ -59,7 +59,7 @@ export default async function CaseDetailPage({
           <p>
             Số tiền liên quan:{" "}
             <span className="font-semibold text-danger">
-              {formatMoneyVnd(data.amount)} VND
+              {formatMoneyVnd(data.amount)}
             </span>
           </p>
           <p>Lượt xem: {data.viewCount.toLocaleString("vi-VN")}</p>

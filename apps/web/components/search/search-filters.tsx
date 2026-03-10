@@ -2,7 +2,7 @@
 
 import type { ReactElement } from "react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -63,9 +63,12 @@ export default function SearchFilters({
         name="bankCode"
         value={bankCode === "_all" ? "" : bankCode}
       />
-      <Button type="submit" variant="neon-outline" className="h-11">
-        Lọc
-      </Button>
+      <FormSubmitButton
+        label="Lọc"
+        pendingLabel="Đang lọc..."
+        variant="neon-outline"
+        className="h-11"
+      />
     </form>
   );
 }

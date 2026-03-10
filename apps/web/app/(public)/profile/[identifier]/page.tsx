@@ -37,7 +37,7 @@ export default async function ProfilePage({
         <h1 className="mt-2 font-mono text-2xl">{profile.bankIdentifier}</h1>
         <div className="mt-4 grid gap-3 text-sm text-[var(--text-secondary)] sm:grid-cols-3">
           <p>Tổng vụ: {profile.totalCases.toLocaleString("vi-VN")}</p>
-          <p>Tổng tiền: {formatMoneyVnd(profile.totalAmount)} VND</p>
+          <p>Tổng tiền: {formatMoneyVnd(profile.totalAmount)}</p>
           <p>Ngân hàng: {profile.bankCode}</p>
         </div>
       </Card>

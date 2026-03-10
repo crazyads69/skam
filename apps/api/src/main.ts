@@ -22,6 +22,9 @@ function assertProductionEnv(): void {
   if (!hasDatabaseUrl && !hasTurso) {
     missing.push('DATABASE_URL or TURSO_DATABASE_URL+TURSO_AUTH_TOKEN')
   }
+  if ((process.env.TURNSTILE_ALLOW_BYPASS ?? 'false') === 'true') {
+    missing.push('TURNSTILE_ALLOW_BYPASS must be false in production')
+  }
   if (missing.length > 0) {
     throw new Error(`Missing required production env: ${missing.join(', ')}`)
   }

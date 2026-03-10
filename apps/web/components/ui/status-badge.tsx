@@ -55,8 +55,8 @@ const statusConfig = {
 } as const;
 
 const caseStatusMap: Record<CaseStatus, keyof typeof statusConfig> = {
-  [CaseStatus.APPROVED]: "safe",
-  [CaseStatus.REJECTED]: "danger",
+  [CaseStatus.APPROVED]: "danger", // Verified scam -> Danger
+  [CaseStatus.REJECTED]: "safe", // Rejected report -> Safe (or at least dismissed)
   [CaseStatus.PENDING]: "pending",
 };
 
@@ -79,6 +79,8 @@ export function StatusBadge({ status }: StatusBadgeProps): ReactElement {
         "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium",
         className,
       )}
+      role="img"
+      aria-label={label}
     >
       <Icon className="size-3.5" />
       {label}

@@ -1,8 +1,8 @@
 import type { ReactElement } from "react";
 import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { FormSubmitButton } from "@/components/ui/form-submit-button";
+import { GlassCard } from "@/components/ui/glass-card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -77,7 +77,7 @@ export default async function AdminCaseDetailPage({
 
   return (
     <section className="grid gap-4">
-      <Card className="p-5">
+      <GlassCard className="p-5">
         <p className="text-xs text-[var(--text-tertiary)]">
           {data.bankName} · {data.bankCode}
         </p>
@@ -85,8 +85,8 @@ export default async function AdminCaseDetailPage({
         <p className="mt-3 text-sm text-[var(--text-secondary)]">
           {data.originalDescription}
         </p>
-      </Card>
-      <Card className="p-5">
+      </GlassCard>
+      <GlassCard className="p-5">
         <form action={refineAction} className="grid gap-3">
           <label htmlFor="refinedDescription" className="text-sm font-medium">
             Mô tả đã tinh chỉnh
@@ -97,12 +97,14 @@ export default async function AdminCaseDetailPage({
             defaultValue={data.refinedDescription ?? data.originalDescription}
             rows={8}
           />
-          <Button type="submit" variant="neon-outline">
-            Lưu nội dung tinh chỉnh
-          </Button>
+          <FormSubmitButton
+            label="Lưu nội dung tinh chỉnh"
+            pendingLabel="Đang lưu..."
+            variant="neon-outline"
+          />
         </form>
-      </Card>
-      <Card className="p-5">
+      </GlassCard>
+      <GlassCard className="p-5">
         <h2 className="mb-3 text-sm font-medium">Bằng chứng</h2>
         <ul className="grid gap-2 text-sm">
           {evidenceUrls.length === 0 ? (
@@ -127,23 +129,31 @@ export default async function AdminCaseDetailPage({
             </li>
           ))}
         </ul>
-      </Card>
+      </GlassCard>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Card className="p-5">
+        <GlassCard className="p-5">
           <form action={approveAction} className="grid gap-3">
-            <Button type="submit" variant="neon" size="lg" className="w-full">
-              Duyệt vụ việc
-            </Button>
+            <FormSubmitButton
+              label="Duyệt vụ việc"
+              pendingLabel="Đang duyệt..."
+              variant="neon"
+              size="lg"
+              className="w-full"
+            />
           </form>
-        </Card>
-        <Card className="p-5">
+        </GlassCard>
+        <GlassCard className="p-5">
           <form action={rejectAction} className="grid gap-3">
             <Input name="reason" placeholder="Lý do từ chối" required />
-            <Button type="submit" variant="danger" size="lg" className="w-full">
-              Từ chối vụ việc
-            </Button>
+            <FormSubmitButton
+              label="Từ chối vụ việc"
+              pendingLabel="Đang từ chối..."
+              variant="danger"
+              size="lg"
+              className="w-full"
+            />
           </form>
-        </Card>
+        </GlassCard>
       </div>
     </section>
   );

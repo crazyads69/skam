@@ -9,17 +9,18 @@ export function AdminTokenSync(): ReactElement | null {
   const pathname = usePathname();
 
   useEffect(() => {
-    const hash: string = window.location.hash;
-    if (!hash.startsWith("#token=")) return;
-    const token: string = decodeURIComponent(hash.replace("#token=", ""));
+    const url = new URL(window.location.href);
+    const code: string = url.searchParams.get("code") ?? "";
+    if (!code) return;
     fetch("/api/admin/session", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ token }),
+      body: JSON.stringify({ code }),
     })
       .then(async (response) => {
         if (!response.ok) throw new Error("Token không hợp lệ");
         window.history.replaceState({}, "", pathname);
+        router.replace("/admin");
         router.refresh();
       })
       .catch(() => {

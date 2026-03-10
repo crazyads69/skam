@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { getAdminMe } from "@/lib/api";
+import { exchangeAdminCode, getAdminMe } from "@/lib/api";
 import { ADMIN_TOKEN_COOKIE } from "@/lib/admin-auth";
 
 interface SessionBody {
   token?: string;
+  code?: string;
 }
 
 function isValidTokenShape(token: string): boolean {
@@ -13,7 +14,13 @@ function isValidTokenShape(token: string): boolean {
 
 export async function POST(request: Request): Promise<NextResponse> {
   const body = (await request.json().catch(() => null)) as SessionBody | null;
-  const token: string = String(body?.token ?? "").trim();
+  const tokenInput: string = String(body?.token ?? "").trim();
+  const codeInput: string = String(body?.code ?? "").trim();
+  let token: string = tokenInput;
+  if (!token && codeInput) {
+    const exchanged = await exchangeAdminCode(codeInput).catch(() => null);
+    token = exchanged?.data?.token ?? "";
+  }
   if (!token || !isValidTokenShape(token)) {
     return NextResponse.json(
       { success: false, error: "Token không hợp lệ" },
@@ -31,6 +38,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     success: true,
     data: me.data ?? null,
   });
+  response.headers.set("Cache-Control", "no-store");
   response.cookies.set(ADMIN_TOKEN_COOKIE, token, {
     httpOnly: true,
     sameSite: "strict",
@@ -43,6 +51,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
 export async function DELETE(): Promise<NextResponse> {
   const response = NextResponse.json({ success: true });
+  response.headers.set("Cache-Control", "no-store");
   response.cookies.delete(ADMIN_TOKEN_COOKIE);
   return response;
 }

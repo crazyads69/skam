@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common'
 import type { ApiResponse } from '@skam/shared/src/types'
 import { AuthService, type AdminPrincipal } from './auth.service'
+import { ExchangeCodeDto } from './dto/exchange-code.dto'
 import { AdminGuard } from './guards/admin.guard'
 import { GitHubAuthGuard } from './guards/github-auth.guard'
 
@@ -33,12 +34,23 @@ export class AuthController {
     @Res() response: RedirectResponseLike
   ): Promise<void> {
     const username: string = request.user?.username ?? ''
-    const token: string = await this.authService.issueAdminToken({
+    const code: string = await this.authService.issueAdminLoginCode({
       username,
       provider: 'github'
     })
     const webBase: string = process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
-    response.redirect(`${webBase}/admin/login#token=${encodeURIComponent(token)}`)
+    response.redirect(`${webBase}/admin/login?code=${encodeURIComponent(code)}`)
+  }
+
+  @Post('code/exchange')
+  public async exchangeCode(
+    @Body() payload: ExchangeCodeDto
+  ): Promise<ApiResponse<{ token: string; principal: AdminPrincipal }>> {
+    const result = await this.authService.exchangeAdminLoginCode(payload.code)
+    return {
+      success: true,
+      data: result
+    }
   }
 
   @Get('me')

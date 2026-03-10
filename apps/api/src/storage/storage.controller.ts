@@ -9,6 +9,7 @@ import {
 import type { ApiResponse } from "@skam/shared/src/types";
 import { AdminGuard } from "../auth/guards/admin.guard";
 import { CacheService } from "../cache/cache.service";
+import { assertAllowedWriteOrigin } from "../common/request-origin";
 import { resolveRequestIdentifier } from "../common/request-identifier";
 import { PublicViewUrlDto } from "./dto/public-view-url.dto";
 import { UploadPresignDto } from "./dto/upload-presign.dto";
@@ -33,6 +34,7 @@ export class StorageController {
   ): Promise<
     ApiResponse<Awaited<ReturnType<StorageService["presignUpload"]>>>
   > {
+    assertAllowedWriteOrigin(request.headers);
     const identifier: string = resolveRequestIdentifier(request);
     const allowed: boolean = await this.cacheService.fixedWindowLimit(
       `ratelimit:upload:${identifier}`,

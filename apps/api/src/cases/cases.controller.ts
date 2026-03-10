@@ -10,6 +10,7 @@ import {
 } from "@nestjs/common";
 import type { ApiResponse } from "@skam/shared/src/types";
 import { CacheService } from "../cache/cache.service";
+import { assertAllowedWriteOrigin } from "../common/request-origin";
 import { resolveRequestIdentifier } from "../common/request-identifier";
 import { CreateCaseDto } from "./dto/create-case.dto";
 import { PaginateCaseDto } from "./dto/paginate-case.dto";
@@ -32,6 +33,7 @@ export class CasesController {
       headers: Record<string, string | string[] | undefined>;
     },
   ): Promise<ApiResponse<Awaited<ReturnType<CasesService["createCase"]>>>> {
+    assertAllowedWriteOrigin(request.headers);
     const candidateIp: string = resolveRequestIdentifier(request);
     const data = await this.casesService.createCase(payload, candidateIp);
     return { success: true, data };
@@ -97,7 +99,7 @@ export class CasesController {
     if (!allowed) {
       throw new HttpException("Vượt giới hạn truy cập vụ việc", 429);
     }
-    const data = await this.casesService.getCaseById(id);
+    const data = await this.casesService.getCaseById(id, identifier);
     return { success: true, data };
   }
 }
