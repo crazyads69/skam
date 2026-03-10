@@ -90,7 +90,7 @@ export default async function SearchPage({
         <div className="mt-6 flex items-center justify-between gap-3">
           <Link
             href={previousHref}
-            className={`rounded-lg px-4 py-2 text-sm ${page <= 1 ? "pointer-events-none border border-border text-[var(--text-disabled)]" : "border border-[var(--border-neon)] text-neon"}`}
+            className={`rounded-lg px-4 py-2 text-sm ${page <= 1 ? "pointer-events-none border border-border text-[var(--text-disabled)]" : "border border-neon text-neon"}`}
           >
             Trang trước
           </Link>
@@ -100,7 +100,7 @@ export default async function SearchPage({
           </p>
           <Link
             href={nextHref}
-            className={`rounded-lg px-4 py-2 text-sm ${page >= payload.totalPages ? "pointer-events-none border border-border text-[var(--text-disabled)]" : "border border-[var(--border-neon)] text-neon"}`}
+            className={`rounded-lg px-4 py-2 text-sm ${page >= payload.totalPages ? "pointer-events-none border border-border text-[var(--text-disabled)]" : "border border-neon text-neon"}`}
           >
             Trang sau
           </Link>

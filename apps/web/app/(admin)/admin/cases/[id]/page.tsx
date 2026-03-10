@@ -50,12 +50,11 @@ export default async function AdminCaseDetailPage({
     revalidatePath(`/admin/cases/${id}`);
   }
 
-  async function approveAction(formData: FormData): Promise<void> {
+  async function approveAction(): Promise<void> {
     "use server";
     const token = await getAdminTokenFromCookie();
     if (!token) redirect("/admin/login");
-    const refinedDescription = String(formData.get("refinedDescription") ?? "");
-    await approveAdminCase(token, id, refinedDescription || undefined);
+    await approveAdminCase(token, id, undefined);
     revalidatePath("/admin");
     redirect("/admin");
   }
@@ -127,11 +126,6 @@ export default async function AdminCaseDetailPage({
       <div className="grid gap-3 sm:grid-cols-2">
         <Card className="p-5">
           <form action={approveAction} className="grid gap-3">
-            <input
-              type="hidden"
-              name="refinedDescription"
-              value={data.refinedDescription ?? data.originalDescription}
-            />
             <Button type="submit" variant="neon" size="lg" className="w-full">
               Duyệt vụ việc
             </Button>
