@@ -17,9 +17,9 @@ const variantMap: Record<ButtonVariant, string> = {
   default:
     "bg-primary text-primary-foreground hover:bg-neon-light shadow-[var(--shadow-neon)]",
   neon:
-    "bg-primary text-primary-foreground font-semibold hover:bg-neon-light shadow-[var(--shadow-neon)] hover:shadow-[var(--shadow-neon-strong)]",
+    "bg-primary text-primary-foreground font-semibold hover:bg-neon-light active:bg-[var(--neon-green-dark)] shadow-[var(--shadow-neon)] hover:shadow-[var(--shadow-neon-strong)]",
   "neon-outline":
-    "border border-neon text-neon hover:bg-[var(--neon-green-ghost)]",
+    "border border-neon text-neon hover:bg-[var(--neon-green-ghost)] hover:shadow-[var(--shadow-neon)]",
   ghost: "bg-transparent text-foreground hover:bg-surface-3",
   danger:
     "bg-destructive text-destructive-foreground hover:opacity-90 shadow-[var(--shadow-danger)]",
