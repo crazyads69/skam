@@ -7,6 +7,7 @@ import { PrismaService } from '../database/prisma.service'
 import { TelegramNotifierService } from '../notifications/telegram-notifier.service'
 import { TurnstileService } from '../turnstile/turnstile.service'
 import { CreateCaseDto } from './dto/create-case.dto'
+import { PaginateCaseDto } from './dto/paginate-case.dto'
 import { SearchCaseDto } from './dto/search-case.dto'
 
 type SearchResult = PaginatedResponse<ScamCase>
@@ -95,6 +96,36 @@ export class CasesService {
         { bankIdentifier: { contains: normalizedQuery } },
         { scammerName: { contains: normalizedQuery } }
       ]
+    }
+    const [items, total] = await Promise.all([
+      this.prisma.scamCase.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+        include: {
+          evidenceFiles: true,
+          socialLinks: true
+        }
+      }),
+      this.prisma.scamCase.count({ where })
+    ])
+    return {
+      success: true,
+      data: items.map((item) => this.mapCase(item)),
+      page,
+      pageSize,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / pageSize))
+    }
+  }
+
+  public async listRecent(query: PaginateCaseDto): Promise<SearchResult> {
+    const page: number = query.page
+    const pageSize: number = query.pageSize
+    const skip: number = (page - 1) * pageSize
+    const where = {
+      status: CaseStatus.APPROVED
     }
     const [items, total] = await Promise.all([
       this.prisma.scamCase.findMany({

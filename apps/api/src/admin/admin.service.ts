@@ -41,6 +41,15 @@ export class AdminService {
     };
   }
 
+  public async getCaseById(id: string): Promise<ScamCase> {
+    const found = await this.prisma.scamCase.findUnique({
+      where: { id },
+      include: { evidenceFiles: true, socialLinks: true },
+    });
+    if (!found) throw new NotFoundException("Không tìm thấy vụ việc");
+    return this.mapCase(found);
+  }
+
   public async approveCase(
     id: string,
     actor: string,
@@ -77,6 +86,10 @@ export class AdminService {
       include: { socialLinks: true, evidenceFiles: true },
     });
     if (!approved) throw new NotFoundException("Không tìm thấy vụ việc");
+    await this.prisma.evidenceFile.updateMany({
+      where: { caseId: approved.id },
+      data: { isApproved: true },
+    });
     await this.rebuildProfileAndStats(
       approved.bankIdentifier,
       approved.bankCode,

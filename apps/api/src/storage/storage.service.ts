@@ -1,6 +1,7 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { BadRequestException, Injectable } from "@nestjs/common";
+import { CaseStatus } from "@skam/shared/src/types";
 import { randomUUID } from "node:crypto";
 import { CacheService } from "../cache/cache.service";
 import { PrismaService } from "../database/prisma.service";
@@ -9,6 +10,12 @@ import { UploadPresignDto } from "./dto/upload-presign.dto";
 interface PresignPayload {
   fileKey: string;
   uploadUrl: string;
+  expiresIn: number;
+}
+
+interface ViewUrlPayload {
+  fileKey: string;
+  viewUrl: string;
   expiresIn: number;
 }
 
@@ -135,6 +142,62 @@ export class StorageService {
       uploadUrl,
       expiresIn: this.expiresInSeconds,
     };
+  }
+
+  public async presignViewUrl(fileKey: string): Promise<ViewUrlPayload> {
+    if (!fileKey.startsWith("evidence/")) {
+      throw new BadRequestException("Đường dẫn tệp không hợp lệ");
+    }
+    const bucketName: string = process.env.R2_BUCKET_NAME ?? "skam";
+    const endpoint: string | undefined = process.env.R2_ENDPOINT;
+    const accessKeyId: string | undefined = process.env.R2_ACCESS_KEY_ID;
+    const secretAccessKey: string | undefined =
+      process.env.R2_SECRET_ACCESS_KEY;
+    if (!endpoint || !accessKeyId || !secretAccessKey) {
+      throw new BadRequestException("Thiếu cấu hình lưu trữ R2");
+    }
+    const client: S3Client = new S3Client({
+      region: "auto",
+      endpoint,
+      forcePathStyle: false,
+      credentials: {
+        accessKeyId,
+        secretAccessKey,
+      },
+    });
+    const command = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: fileKey,
+    });
+    const viewUrl: string = await getSignedUrl(client, command, {
+      expiresIn: this.expiresInSeconds,
+    });
+    return {
+      fileKey,
+      viewUrl,
+      expiresIn: this.expiresInSeconds,
+    };
+  }
+
+  public async presignPublicViewUrl(
+    caseId: string,
+    evidenceId: string,
+  ): Promise<ViewUrlPayload> {
+    const found = await this.prisma.evidenceFile.findFirst({
+      where: {
+        id: evidenceId,
+        caseId,
+        isApproved: true,
+        case: {
+          status: CaseStatus.APPROVED,
+        },
+      },
+      select: { fileKey: true },
+    });
+    if (!found) {
+      throw new BadRequestException("Không tìm thấy bằng chứng công khai");
+    }
+    return this.presignViewUrl(found.fileKey);
   }
 
   private getFileExtension(fileName: string): string {

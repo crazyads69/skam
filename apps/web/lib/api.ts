@@ -1,18 +1,270 @@
-import type { ApiResponse, ScamCase } from '@skam/shared/types'
+import type {
+  ApiResponse,
+  Bank,
+  CaseStatus,
+  PaginatedResponse,
+  ScamCase,
+  ScammerProfile,
+  SocialPlatform,
+} from "@skam/shared/types";
 
-const defaultApiUrl: string = 'http://localhost:4000/api/v1'
-const apiUrl: string = process.env.NEXT_PUBLIC_API_URL ?? defaultApiUrl
+const defaultApiUrl: string = "http://localhost:4000/api/v1";
+export const apiUrl: string = process.env.NEXT_PUBLIC_API_URL ?? defaultApiUrl;
 
-export interface SearchParams {
-  readonly q: string
-  readonly bankCode?: string
+interface ApiRequestInit extends Omit<RequestInit, "body"> {
+  body?: unknown;
+  token?: string;
 }
 
-export async function searchCases(params: SearchParams): Promise<ApiResponse<ScamCase[]>> {
-  const searchParams: URLSearchParams = new URLSearchParams({ q: params.q })
-  if (params.bankCode) searchParams.set('bankCode', params.bankCode)
-  const response: Response = await fetch(`${apiUrl}/cases/search?${searchParams.toString()}`, {
-    cache: 'no-store'
-  })
-  return response.json()
+async function apiRequest<T>(path: string, init?: ApiRequestInit): Promise<T> {
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+  };
+  if (init?.headers) {
+    const extraHeaders = new Headers(init.headers);
+    extraHeaders.forEach((value, key) => {
+      headers[key] = value;
+    });
+  }
+  if (init?.token) headers.Authorization = `Bearer ${init.token}`;
+  const response: Response = await fetch(`${apiUrl}${path}`, {
+    ...init,
+    headers,
+    body: init?.body ? JSON.stringify(init.body) : undefined,
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    const payload: unknown = await response.json().catch(() => null);
+    const message: string =
+      typeof payload === "object" &&
+      payload !== null &&
+      "message" in payload &&
+      typeof (payload as { message?: unknown }).message === "string"
+        ? (payload as { message: string }).message
+        : `HTTP ${response.status}`;
+    throw new Error(message);
+  }
+  return response.json() as Promise<T>;
+}
+
+export interface SearchParams {
+  readonly q: string;
+  readonly bankCode?: string;
+  readonly page?: number;
+  readonly pageSize?: number;
+}
+
+export interface SearchPayload extends PaginatedResponse<ScamCase> {}
+
+export async function searchCases(
+  params: SearchParams,
+): Promise<SearchPayload> {
+  const searchParams: URLSearchParams = new URLSearchParams({ q: params.q });
+  if (params.bankCode) searchParams.set("bankCode", params.bankCode);
+  if (params.page) searchParams.set("page", String(params.page));
+  if (params.pageSize) searchParams.set("pageSize", String(params.pageSize));
+  return apiRequest<SearchPayload>(`/cases/search?${searchParams.toString()}`);
+}
+
+export async function getCase(id: string): Promise<ApiResponse<ScamCase>> {
+  return apiRequest<ApiResponse<ScamCase>>(`/cases/${id}`);
+}
+
+export interface ProfilePayload extends ScammerProfile {
+  recentCases: ScamCase[];
+}
+
+export async function getProfile(
+  identifier: string,
+): Promise<ApiResponse<ProfilePayload>> {
+  return apiRequest<ApiResponse<ProfilePayload>>(
+    `/profiles/${encodeURIComponent(identifier)}`,
+  );
+}
+
+export async function getBanks(): Promise<ApiResponse<Bank[]>> {
+  return apiRequest<ApiResponse<Bank[]>>("/banks");
+}
+
+export async function searchBanks(query: string): Promise<ApiResponse<Bank[]>> {
+  const searchParams: URLSearchParams = new URLSearchParams({ q: query });
+  return apiRequest<ApiResponse<Bank[]>>(
+    `/banks/search?${searchParams.toString()}`,
+  );
+}
+
+export interface PresignUploadInput {
+  readonly fileName: string;
+  readonly fileSize: number;
+  readonly contentType: string;
+  readonly fileHash?: string;
+}
+
+export interface PresignUploadPayload {
+  fileKey: string;
+  uploadUrl: string;
+  expiresIn: number;
+}
+
+export async function presignUpload(
+  input: PresignUploadInput,
+): Promise<ApiResponse<PresignUploadPayload>> {
+  return apiRequest<ApiResponse<PresignUploadPayload>>("/upload/presign", {
+    method: "POST",
+    body: input,
+  });
+}
+
+export interface CreateCaseInput {
+  readonly bankIdentifier: string;
+  readonly bankName: string;
+  readonly bankCode: string;
+  readonly amount?: number;
+  readonly scammerName?: string;
+  readonly originalDescription: string;
+  readonly turnstileToken?: string;
+  readonly socialLinks?: Array<{
+    platform: SocialPlatform;
+    url: string;
+    username?: string;
+  }>;
+  readonly evidenceFiles?: Array<{
+    fileType: string;
+    fileKey: string;
+    fileName?: string;
+    fileSize?: number;
+    fileHash?: string;
+  }>;
+}
+
+export async function createCase(
+  input: CreateCaseInput,
+): Promise<ApiResponse<ScamCase>> {
+  return apiRequest<ApiResponse<ScamCase>>("/cases", {
+    method: "POST",
+    body: input,
+  });
+}
+
+export async function getSummary(): Promise<
+  ApiResponse<{
+    totalCases: number;
+    totalApprovedCases: number;
+    totalPendingCases: number;
+    totalScammerProfiles: number;
+    totalScamAmount: number;
+  }>
+> {
+  return apiRequest("/analytics/summary");
+}
+
+export async function getRecentCases(
+  page: number = 1,
+  pageSize: number = 6,
+): Promise<PaginatedResponse<ScamCase>> {
+  const searchParams: URLSearchParams = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+  return apiRequest(`/cases/recent?${searchParams.toString()}`);
+}
+
+export async function getAdminMe(
+  token: string,
+): Promise<ApiResponse<{ username: string; provider: "github" }>> {
+  return apiRequest("/auth/me", { token });
+}
+
+export async function listAdminCases(
+  token: string,
+  status?: CaseStatus,
+): Promise<PaginatedResponse<ScamCase>> {
+  const searchParams = new URLSearchParams();
+  if (status) searchParams.set("status", status);
+  return apiRequest(
+    `/admin/cases${searchParams.size ? `?${searchParams.toString()}` : ""}`,
+    { token },
+  );
+}
+
+export async function approveAdminCase(
+  token: string,
+  id: string,
+  refinedDescription?: string,
+): Promise<ApiResponse<ScamCase>> {
+  return apiRequest(`/admin/cases/${id}/approve`, {
+    method: "PATCH",
+    token,
+    body: { refinedDescription },
+  });
+}
+
+export async function rejectAdminCase(
+  token: string,
+  id: string,
+  reason: string,
+): Promise<ApiResponse<ScamCase>> {
+  return apiRequest(`/admin/cases/${id}/reject`, {
+    method: "PATCH",
+    token,
+    body: { reason },
+  });
+}
+
+export async function getAdminCase(
+  token: string,
+  id: string,
+): Promise<ApiResponse<ScamCase>> {
+  return apiRequest(`/admin/cases/${id}`, { token });
+}
+
+export async function getAdminAnalytics(token: string): Promise<
+  ApiResponse<{
+    totalCases: number;
+    statusBreakdown: Record<string, number>;
+    topReportedAccounts: Array<{
+      bankIdentifier: string;
+      bankCode: string;
+      count: number;
+    }>;
+  }>
+> {
+  return apiRequest("/admin/analytics", { token });
+}
+
+export async function refineAdminCase(
+  token: string,
+  id: string,
+  refinedDescription: string,
+): Promise<ApiResponse<ScamCase>> {
+  return apiRequest(`/admin/cases/${id}/refine`, {
+    method: "PATCH",
+    token,
+    body: { refinedDescription },
+  });
+}
+
+export async function getAdminEvidenceViewUrl(
+  token: string,
+  fileKey: string,
+): Promise<
+  ApiResponse<{ fileKey: string; viewUrl: string; expiresIn: number }>
+> {
+  return apiRequest("/upload/view-url", {
+    method: "POST",
+    token,
+    body: { fileKey },
+  });
+}
+
+export async function getPublicEvidenceViewUrl(
+  caseId: string,
+  evidenceId: string,
+): Promise<
+  ApiResponse<{ fileKey: string; viewUrl: string; expiresIn: number }>
+> {
+  return apiRequest("/upload/public-view-url", {
+    method: "POST",
+    body: { caseId, evidenceId },
+  });
 }

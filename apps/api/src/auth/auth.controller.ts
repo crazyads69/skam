@@ -38,7 +38,7 @@ export class AuthController {
       provider: 'github'
     })
     const webBase: string = process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
-    response.redirect(`${webBase}/admin#token=${encodeURIComponent(token)}`)
+    response.redirect(`${webBase}/admin/login#token=${encodeURIComponent(token)}`)
   }
 
   @Get('me')

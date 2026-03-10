@@ -69,6 +69,14 @@ export class AdminController {
     return this.adminService.listCases(CaseStatus.PENDING, 1, 50);
   }
 
+  @Get("cases/:id")
+  public async getCaseById(
+    @Param("id") id: string,
+  ): Promise<ApiResponse<Awaited<ReturnType<AdminService["getCaseById"]>>>> {
+    const data = await this.adminService.getCaseById(id);
+    return { success: true, data };
+  }
+
   @Patch("cases/:id/approve")
   public async approveCase(
     @Param("id") id: string,
