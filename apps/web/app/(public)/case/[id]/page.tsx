@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { ReactElement } from "react";
 import { notFound } from "next/navigation";
 import { Card } from "@/components/ui/card";
@@ -7,6 +8,17 @@ import { formatMoneyVnd } from "@/lib/utils";
 
 interface CaseDetailPageProps {
   readonly params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({
+  params,
+}: CaseDetailPageProps): Promise<Metadata> {
+  const { id } = await params;
+  return {
+    title: `Chi tiết vụ việc ${id}`,
+    description:
+      "Xem chi tiết vụ việc lừa đảo đã được duyệt, bao gồm thông tin tài khoản và bằng chứng liên quan.",
+  };
 }
 
 export default async function CaseDetailPage({

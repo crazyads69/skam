@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import type { ReactElement } from "react";
 import { AdminTokenSync } from "@/components/admin/token-sync";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { apiUrl } from "@/lib/api";
+
+export const metadata: Metadata = {
+  title: "Đăng nhập quản trị",
+};
 
 export default function AdminLoginPage(): ReactElement {
   return (

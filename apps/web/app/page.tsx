@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { ReactElement } from "react";
 import Link from "next/link";
 import { CaseStatus } from "@skam/shared/types";
@@ -5,6 +6,12 @@ import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { getRecentCases, getSummary } from "@/lib/api";
 import SearchForm from "@/components/search/search-form";
+
+export const metadata: Metadata = {
+  title: "Tra cứu tài khoản lừa đảo",
+  description:
+    "Tra cứu nhanh tài khoản ngân hàng nghi ngờ lừa đảo và xem báo cáo đã kiểm duyệt.",
+};
 
 export default async function HomePage(): Promise<ReactElement> {
   const summary = await getSummary().catch(() => null);
@@ -34,13 +41,17 @@ export default async function HomePage(): Promise<ReactElement> {
           </p>
         </Card>
         <Card className="p-4">
-          <p className="text-xs text-[var(--text-tertiary)]">Báo cáo công khai</p>
+          <p className="text-xs text-[var(--text-tertiary)]">
+            Báo cáo công khai
+          </p>
           <p className="mt-2 font-mono text-2xl font-semibold text-neon">
             {totalApprovedCases.toLocaleString("vi-VN")}
           </p>
         </Card>
         <Card className="p-4">
-          <p className="text-xs text-[var(--text-tertiary)]">Thiệt hại ghi nhận</p>
+          <p className="text-xs text-[var(--text-tertiary)]">
+            Thiệt hại ghi nhận
+          </p>
           <p className="mt-2 font-mono text-2xl font-semibold text-neon">
             {Math.round(totalScamAmount).toLocaleString("vi-VN")} VND
           </p>

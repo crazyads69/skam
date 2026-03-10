@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { ReactElement } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -7,6 +8,17 @@ import { formatMoneyVnd } from "@/lib/utils";
 
 interface ProfilePageProps {
   readonly params: Promise<{ identifier: string }>;
+}
+
+export async function generateMetadata({
+  params,
+}: ProfilePageProps): Promise<Metadata> {
+  const { identifier } = await params;
+  return {
+    title: `Hồ sơ ${identifier}`,
+    description:
+      "Xem hồ sơ tổng hợp các vụ việc đã duyệt liên quan đến tài khoản ngân hàng này.",
+  };
 }
 
 export default async function ProfilePage({

@@ -205,6 +205,7 @@ Source of truth: `.env.example`.
 |---|---|---|---|
 | `DATABASE_URL` | Yes (local) | Prisma/libsql DB URL for local/dev | `file:./dev.db` |
 | `NEXT_PUBLIC_API_URL` | Yes | Web app API base URL (include `/api/v1`) | `http://localhost:4000/api/v1` |
+| `NEXT_PUBLIC_SITE_URL` | Recommended | Canonical public site URL for metadata, robots, and sitemap | `http://localhost:3000` |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Optional | Turnstile site key for frontend widget | `...` |
 | `NEXTAUTH_URL` | Recommended | App base URL used in auth-related flows | `http://localhost:3000` |
 | `NEXTAUTH_SECRET` | Recommended | Secret for auth/session integrations | `...` |

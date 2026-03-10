@@ -8,9 +8,6 @@ export const metadata: Metadata = {
   },
   description:
     "Nền tảng tra cứu và báo cáo tài khoản ngân hàng có dấu hiệu lừa đảo tại Việt Nam.",
-  alternates: {
-    canonical: "/",
-  },
 };
 
 interface PublicLayoutProps {

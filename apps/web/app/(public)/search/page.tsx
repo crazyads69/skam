@@ -1,10 +1,18 @@
+import type { Metadata } from "next";
 import type { ReactElement } from "react";
 import Link from "next/link";
 import { CaseStatus } from "@skam/shared/types";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
+import SearchFilters from "@/components/search/search-filters";
 import { getBanks, searchCases } from "@/lib/api";
 import { formatMoneyVnd } from "@/lib/utils";
+
+export const metadata: Metadata = {
+  title: "Kết quả tra cứu",
+  description:
+    "Tra cứu theo số tài khoản, tên hoặc ngân hàng để kiểm tra dấu hiệu lừa đảo.",
+};
 
 interface SearchPageProps {
   readonly searchParams: Promise<{
@@ -43,36 +51,11 @@ export default async function SearchPage({
       ) : null}
       {q ? (
         <Card className="mb-4 p-4">
-          <form
-            action="/search"
-            className="grid gap-3 sm:grid-cols-[1fr_220px_120px]"
-          >
-            <input type="hidden" name="page" value="1" />
-            <input
-              name="q"
-              defaultValue={q}
-              placeholder="Từ khóa"
-              className="h-11 rounded-lg border border-border bg-surface-1 px-3 text-sm"
-            />
-            <select
-              name="bankCode"
-              defaultValue={bankCode ?? ""}
-              className="h-11 rounded-lg border border-border bg-surface-1 px-3 text-sm"
-            >
-              <option value="">Tất cả ngân hàng</option>
-              {(banks?.data ?? []).map((bank) => (
-                <option key={bank.code} value={bank.code}>
-                  {bank.shortName || bank.short_name || bank.code}
-                </option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              className="h-11 rounded-lg border border-[var(--border-neon)] bg-[var(--neon-green-ghost)] px-4 text-sm text-neon"
-            >
-              Lọc
-            </button>
-          </form>
+          <SearchFilters
+            defaultQuery={q}
+            defaultBankCode={bankCode}
+            banks={banks?.data ?? []}
+          />
         </Card>
       ) : null}
       {q && payload?.data?.length === 0 ? (

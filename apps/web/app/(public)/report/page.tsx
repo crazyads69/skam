@@ -10,6 +10,13 @@ import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { createCase, getBanks, presignUpload } from "@/lib/api";
 
@@ -72,6 +79,7 @@ export default function ReportPage(): ReactElement {
     handleSubmit,
     formState: { errors },
     reset,
+    setValue,
     watch,
   } = useForm<ReportFormValues>({
     resolver: zodResolver(reportSchema),
@@ -229,17 +237,27 @@ export default function ReportPage(): ReactElement {
             <p className="text-xs text-danger">{errors.bankName.message}</p>
           ) : null}
 
-          <select
-            {...register("bankCode")}
-            className="h-11 rounded-lg border border-border bg-surface-1 px-3 text-foreground"
+          <input type="hidden" {...register("bankCode")} />
+          <Select
+            value={watch("bankCode") || "VCB"}
+            onValueChange={(value: string) =>
+              setValue("bankCode", value, { shouldValidate: true })
+            }
           >
-            {banks.map((bank) => (
-              <option key={bank.code} value={bank.code}>
-                {bank.shortName} ({bank.code})
-              </option>
-            ))}
-            {banks.length === 0 ? <option value="VCB">VCB</option> : null}
-          </select>
+            <SelectTrigger>
+              <SelectValue placeholder="Chọn ngân hàng" />
+            </SelectTrigger>
+            <SelectContent>
+              {banks.map((bank) => (
+                <SelectItem key={bank.code} value={bank.code}>
+                  {bank.shortName} ({bank.code})
+                </SelectItem>
+              ))}
+              {banks.length === 0 ? (
+                <SelectItem value="VCB">VCB</SelectItem>
+              ) : null}
+            </SelectContent>
+          </Select>
 
           <p className="mt-2 text-sm font-medium text-foreground">
             Bước 2: Chi tiết vụ việc
@@ -278,24 +296,28 @@ export default function ReportPage(): ReactElement {
                 key={`${item.platform}-${index}`}
                 className="grid gap-2 rounded-lg border border-border bg-surface-1 p-3 sm:grid-cols-[140px_1fr_1fr_auto]"
               >
-                <select
+                <Select
                   value={item.platform}
-                  onChange={(event) => {
-                    const platform = event.target.value as SocialPlatform;
+                  onValueChange={(value: string) => {
+                    const platform = value as SocialPlatform;
                     setSocialLinks((prev) =>
                       prev.map((entry, idx) =>
                         idx === index ? { ...entry, platform } : entry,
                       ),
                     );
                   }}
-                  className="h-10 rounded-lg border border-border bg-surface-1 px-2 text-sm"
                 >
-                  {Object.values(SocialPlatform).map((platform) => (
-                    <option key={platform} value={platform}>
-                      {platform}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.values(SocialPlatform).map((platform) => (
+                      <SelectItem key={platform} value={platform}>
+                        {platform}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Input
                   placeholder="https://..."
                   value={item.url}
@@ -357,7 +379,7 @@ export default function ReportPage(): ReactElement {
               <Upload className="size-4 text-neon" />
               Tải bằng chứng (tối đa 5 tệp)
             </span>
-            <input
+            <Input
               type="file"
               accept="image/*,video/mp4,video/webm,audio/mpeg,audio/wav,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
               multiple

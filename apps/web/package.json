@@ -11,6 +11,7 @@
     "test": "echo \"web tests skipped\""
   },
   "dependencies": {
+    "@radix-ui/react-select": "^2.2.6",
     "@hookform/resolvers": "^3.9.0",
     "@skam/shared": "workspace:*",
     "clsx": "^2.1.1",

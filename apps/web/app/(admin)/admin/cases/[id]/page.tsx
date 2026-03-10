@@ -3,6 +3,8 @@ import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   approveAdminCase,
   getAdminEvidenceViewUrl,
@@ -85,12 +87,11 @@ export default async function AdminCaseDetailPage({
           <label htmlFor="refinedDescription" className="text-sm font-medium">
             Mô tả đã tinh chỉnh
           </label>
-          <textarea
+          <Textarea
             id="refinedDescription"
             name="refinedDescription"
             defaultValue={data.refinedDescription ?? data.originalDescription}
             rows={8}
-            className="w-full rounded-lg border border-border bg-surface-1 px-3 py-3 text-sm"
           />
           <Button type="submit" variant="neon-outline">
             Lưu nội dung tinh chỉnh
@@ -138,10 +139,9 @@ export default async function AdminCaseDetailPage({
         </Card>
         <Card className="p-5">
           <form action={rejectAction} className="grid gap-3">
-            <input
+            <Input
               name="reason"
               placeholder="Lý do từ chối"
-              className="h-11 rounded-lg border border-border bg-surface-1 px-3 text-sm"
               required
             />
             <Button type="submit" variant="danger" size="lg" className="w-full">
