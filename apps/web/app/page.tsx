@@ -58,7 +58,10 @@ export default async function HomePage(): Promise<ReactElement> {
         </section>
 
         {/* Search Section */}
-        <GlassCard variant="neon" className="mx-auto mb-16 max-w-3xl p-6 md:p-8">
+        <GlassCard
+          variant="neon"
+          className="mx-auto mb-16 max-w-3xl p-6 md:p-8"
+        >
           <SearchForm />
         </GlassCard>
 

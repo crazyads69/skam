@@ -23,27 +23,27 @@ enum SocialPlatform {
 }
 
 model ScamCase {
-  id                  String     @id @default(cuid())
-  createdAt           DateTime   @default(now())
-  updatedAt           DateTime   @updatedAt
-  bankIdentifier      String
-  bankName            String
-  bankCode            String
-  amount              Float?
-  scammerName         String?
-  originalDescription String
-  refinedDescription  String?
-  status              CaseStatus @default(PENDING)
-  approvedAt          DateTime?
-  approvedBy          String?
-  rejectionReason     String?
+  id                   String          @id @default(cuid())
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  bankIdentifier       String
+  bankName             String
+  bankCode             String
+  amount               Float?
+  scammerName          String?
+  originalDescription  String
+  refinedDescription   String?
+  status               CaseStatus      @default(PENDING)
+  approvedAt           DateTime?
+  approvedBy           String?
+  rejectionReason      String?
   submitterFingerprint String?
-  submitterIpHash     String?
-  viewCount           Int        @default(0)
-  profileId           String?
-  profile             ScammerProfile? @relation(fields: [profileId], references: [id])
-  evidenceFiles       EvidenceFile[]
-  socialLinks         SocialLink[]
+  submitterIpHash      String?
+  viewCount            Int             @default(0)
+  profileId            String?
+  profile              ScammerProfile? @relation(fields: [profileId], references: [id])
+  evidenceFiles        EvidenceFile[]
+  socialLinks          SocialLink[]
 
   @@index([bankIdentifier, bankCode])
   @@index([status])
@@ -54,16 +54,16 @@ model ScamCase {
 }
 
 model ScammerProfile {
-  id             String     @id @default(cuid())
-  bankIdentifier String
-  bankCode       String
-  scammerName    String?
-  totalCases     Int        @default(0)
-  totalAmount    Float      @default(0)
+  id              String       @id @default(cuid())
+  bankIdentifier  String
+  bankCode        String
+  scammerName     String?
+  totalCases      Int          @default(0)
+  totalAmount     Float        @default(0)
   firstReportedAt DateTime
   lastReportedAt  DateTime
-  cases          ScamCase[]
-  socialLinks    SocialLink[]
+  cases           ScamCase[]
+  socialLinks     SocialLink[]
 
   @@unique([bankIdentifier, bankCode])
 }
@@ -86,14 +86,14 @@ model EvidenceFile {
 }
 
 model SocialLink {
-  id        String         @id @default(cuid())
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  id        String          @id @default(cuid())
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
   platform  SocialPlatform
   url       String
   username  String?
   caseId    String?
-  case      ScamCase?      @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  case      ScamCase?       @relation(fields: [caseId], references: [id], onDelete: Cascade)
   profileId String?
   profile   ScammerProfile? @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
@@ -102,11 +102,11 @@ model SocialLink {
 }
 
 model SystemStats {
-  id                String @id @default("singleton")
-  totalCases         Int    @default(0)
-  totalApprovedCases Int    @default(0)
-  totalPendingCases  Int    @default(0)
-  totalScammerProfiles Int  @default(0)
-  totalScamAmount    Float  @default(0)
-  updatedAt          DateTime @updatedAt
+  id                   String   @id @default("singleton")
+  totalCases           Int      @default(0)
+  totalApprovedCases   Int      @default(0)
+  totalPendingCases    Int      @default(0)
+  totalScammerProfiles Int      @default(0)
+  totalScamAmount      Float    @default(0)
+  updatedAt            DateTime @updatedAt
 }

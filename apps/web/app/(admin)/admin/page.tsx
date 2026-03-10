@@ -19,9 +19,16 @@ export default async function AdminDashboardPage({
   const pageSize = 20;
   const token = await getAdminTokenFromCookie();
   const pending = token
-    ? await listAdminCases(token, CaseStatus.PENDING, currentPage, pageSize).catch(() => null)
+    ? await listAdminCases(
+        token,
+        CaseStatus.PENDING,
+        currentPage,
+        pageSize,
+      ).catch(() => null)
     : null;
-  const analytics = token ? await getAdminAnalytics(token).catch(() => null) : null;
+  const analytics = token
+    ? await getAdminAnalytics(token).catch(() => null)
+    : null;
   const breakdown = analytics?.data?.statusBreakdown ?? {};
   const totalPages = pending?.totalPages ?? 1;
   return (

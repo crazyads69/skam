@@ -56,9 +56,9 @@ export class StorageController {
     }
     if (this.turnstileService.isEnabled()) {
       const turnstileToken: string = String(
-        Array.isArray(request.headers['x-turnstile-token'])
-          ? request.headers['x-turnstile-token'][0]
-          : request.headers['x-turnstile-token'] ?? '',
+        Array.isArray(request.headers["x-turnstile-token"])
+          ? request.headers["x-turnstile-token"][0]
+          : (request.headers["x-turnstile-token"] ?? ""),
       ).trim();
       if (turnstileToken) {
         const isValid: boolean = await this.turnstileService.verify(

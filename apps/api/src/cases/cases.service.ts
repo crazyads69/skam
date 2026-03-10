@@ -109,7 +109,7 @@ export class CasesService {
 
   public async searchCases(query: SearchCaseDto): Promise<SearchResult> {
     const rawQuery: string = query.q.trim();
-    const escaped: string = rawQuery.toLowerCase().replace(/[%_\\]/g, '\\$&');
+    const escaped: string = rawQuery.toLowerCase().replace(/[%_\\]/g, "\\$&");
     const searchPattern: string = `%${escaped}%`;
     const page: number = query.page;
     const pageSize: number = query.pageSize;
