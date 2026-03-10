@@ -54,15 +54,20 @@ const statusConfig = {
   },
 } as const;
 
+const caseStatusMap: Record<CaseStatus, keyof typeof statusConfig> = {
+  [CaseStatus.APPROVED]: "safe",
+  [CaseStatus.REJECTED]: "danger",
+  [CaseStatus.PENDING]: "pending",
+};
+
+function isCaseStatus(value: StatusBadgeVariant): value is CaseStatus {
+  return Object.values(CaseStatus).includes(value as CaseStatus);
+}
+
 function resolveVariant(status: StatusBadgeVariant): keyof typeof statusConfig {
-  if (status === CaseStatus.APPROVED) return "safe";
-  if (status === CaseStatus.REJECTED) return "danger";
-  if (status === CaseStatus.PENDING) return "pending";
-  if (status === "safe" || status === "danger" || status === "warning") {
-    return status;
-  }
-  if (status === "pending" || status === "info") return status;
-  return "warning";
+  if (isCaseStatus(status)) return caseStatusMap[status];
+  if (status in statusConfig) return status as keyof typeof statusConfig;
+  return "info";
 }
 
 export function StatusBadge({ status }: StatusBadgeProps): ReactElement {
