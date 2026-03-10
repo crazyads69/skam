@@ -30,8 +30,9 @@ describe('CasesService', () => {
     const cache: Pick<CacheService, 'fixedWindowLimit'> = {
       fixedWindowLimit: async () => true
     }
-    const turnstile: Pick<TurnstileService, 'verify'> = {
-      verify: async () => true
+    const turnstile: Pick<TurnstileService, 'verify' | 'isEnabled'> = {
+      verify: async () => true,
+      isEnabled: () => false
     }
     const notifier: Pick<TelegramNotifierService, 'notifyNewCase'> = {
       notifyNewCase: async () => undefined

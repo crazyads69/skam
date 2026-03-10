@@ -33,6 +33,10 @@ export class CasesService {
   public async createCase(payload: CreateCaseDto, requesterIp?: string): Promise<ScamCase> {
     const isLimited: boolean = await this.cache.fixedWindowLimit(`ratelimit:cases:${requesterIp ?? 'unknown'}`, 5, 60 * 60 * 24)
     if (!isLimited) throw new HttpException('Bạn đã gửi quá số lần cho phép hôm nay', 429)
+    const turnstileEnabled: boolean = this.turnstile.isEnabled()
+    if (turnstileEnabled && !payload.turnstileToken) {
+      throw new BadRequestException('Thiếu Turnstile token')
+    }
     if (payload.turnstileToken) {
       const isValid: boolean = await this.turnstile.verify(payload.turnstileToken, requesterIp)
       if (!isValid) throw new BadRequestException('Turnstile token không hợp lệ')

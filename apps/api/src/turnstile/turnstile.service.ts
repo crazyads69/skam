@@ -9,9 +9,14 @@ interface TurnstileResponse {
 export class TurnstileService {
   private readonly logger = new Logger(TurnstileService.name)
 
+  public isEnabled(): boolean {
+    const secret: string = String(process.env.TURNSTILE_SECRET_KEY ?? '').trim()
+    return Boolean(secret)
+  }
+
   public async verify(token: string, remoteIp?: string): Promise<boolean> {
     const secret: string | undefined = process.env.TURNSTILE_SECRET_KEY
-    const allowBypass: boolean = (process.env.TURNSTILE_ALLOW_BYPASS ?? 'true') === 'true'
+    const allowBypass: boolean = (process.env.TURNSTILE_ALLOW_BYPASS ?? 'false') === 'true'
     if (!secret) return allowBypass
     const timeoutMs: number = Math.max(1000, Number(process.env.TURNSTILE_TIMEOUT_MS ?? '5000'))
     const body: Record<string, string> = {

@@ -5,6 +5,7 @@ import { Redis } from "@upstash/redis";
 export class CacheService {
   private readonly redis: Redis | null;
   private readonly logger = new Logger(CacheService.name);
+  private readonly limitFailOpen: boolean;
 
   public constructor() {
     const redisUrl: string | undefined = process.env.UPSTASH_REDIS_REST_URL;
@@ -13,6 +14,10 @@ export class CacheService {
       redisUrl && redisToken
         ? new Redis({ url: redisUrl, token: redisToken })
         : null;
+    const defaultFailOpen: string =
+      process.env.NODE_ENV === "production" ? "false" : "true";
+    this.limitFailOpen =
+      (process.env.CACHE_LIMIT_FAIL_OPEN ?? defaultFailOpen) === "true";
   }
 
   public async get<T>(key: string): Promise<T | null> {
@@ -55,7 +60,7 @@ export class CacheService {
     limit: number,
     windowSeconds: number,
   ): Promise<boolean> {
-    if (!this.redis) return true;
+    if (!this.redis) return this.limitFailOpen;
     try {
       const count: number = await this.redis.incr(key);
       if (count === 1) await this.redis.expire(key, windowSeconds);
@@ -63,7 +68,21 @@ export class CacheService {
     } catch (error) {
       const reason: string = error instanceof Error ? error.message : String(error);
       this.logger.warn(`cache_limit_error key=${key} reason=${reason}`);
-      return true;
+      return this.limitFailOpen;
+    }
+  }
+
+  public async healthcheck(): Promise<{ enabled: boolean; ok: boolean }> {
+    if (!this.redis) return { enabled: false, ok: true };
+    const key: string = `health:cache:${Date.now()}`;
+    try {
+      await this.redis.set(key, "1", { ex: 10 });
+      await this.redis.del(key);
+      return { enabled: true, ok: true };
+    } catch (error) {
+      const reason: string = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`cache_health_error reason=${reason}`);
+      return { enabled: true, ok: false };
     }
   }
 }

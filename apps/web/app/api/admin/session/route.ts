@@ -6,12 +6,17 @@ interface SessionBody {
   token?: string;
 }
 
+function isValidTokenShape(token: string): boolean {
+  if (token.length < 32 || token.length > 4096) return false;
+  return token.split(".").length === 3;
+}
+
 export async function POST(request: Request): Promise<NextResponse> {
   const body = (await request.json().catch(() => null)) as SessionBody | null;
-  const token: string | undefined = body?.token;
-  if (!token) {
+  const token: string = String(body?.token ?? "").trim();
+  if (!token || !isValidTokenShape(token)) {
     return NextResponse.json(
-      { success: false, error: "Thiếu token" },
+      { success: false, error: "Token không hợp lệ" },
       { status: 400 },
     );
   }

@@ -9,8 +9,11 @@ interface GitHubProfile {
 @Injectable()
 export class GitHubStrategy extends PassportStrategy(Strategy, 'github') {
   public constructor() {
-    const clientID: string = process.env.GITHUB_CLIENT_ID ?? 'dummy-client-id'
-    const clientSecret: string = process.env.GITHUB_CLIENT_SECRET ?? 'dummy-client-secret'
+    const clientID: string = String(process.env.GITHUB_CLIENT_ID ?? '').trim()
+    const clientSecret: string = String(process.env.GITHUB_CLIENT_SECRET ?? '').trim()
+    if (!clientID || !clientSecret) {
+      throw new Error('Missing GITHUB_CLIENT_ID or GITHUB_CLIENT_SECRET')
+    }
     super({
       clientID,
       clientSecret,

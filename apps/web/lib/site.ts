@@ -6,23 +6,28 @@ function normalizeUrl(input: string): string {
   return input.endsWith("/") ? input.slice(0, -1) : input;
 }
 
+function ensureAbsoluteUrl(input: string): string {
+  if (input.startsWith("http://") || input.startsWith("https://")) {
+    return input;
+  }
+  return `https://${input}`;
+}
+
+export function getApiBaseUrl(): string {
+  const rawEnv: string = String(process.env.NEXT_PUBLIC_API_URL ?? "").trim();
+  const fallback: string = "http://localhost:4000/api/v1";
+  const candidate: string = rawEnv ? ensureAbsoluteUrl(rawEnv) : fallback;
+  const normalized: string = normalizeUrl(candidate);
+  return normalized.endsWith("/api/v1") ? normalized : `${normalized}/api/v1`;
+}
+
 export function getSiteUrl(): string {
   const fromEnv: string | undefined =
     process.env.NEXT_PUBLIC_SITE_URL ??
     process.env.NEXTAUTH_URL ??
     process.env.VERCEL_PROJECT_PRODUCTION_URL;
   if (fromEnv && fromEnv.trim()) {
-    const raw = fromEnv.trim();
-    if (raw.startsWith("http://") || raw.startsWith("https://")) {
-      return normalizeUrl(raw);
-    }
-    return normalizeUrl(`https://${raw}`);
+    return normalizeUrl(ensureAbsoluteUrl(fromEnv.trim()));
   }
   return "http://localhost:3000";
-}
-
-export function getApiBaseUrl(): string {
-  const fromEnv: string =
-    process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
-  return normalizeUrl(fromEnv);
 }

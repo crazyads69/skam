@@ -3,7 +3,7 @@
 ## Architecture
 - Deploy API as one Vercel project with Root Directory: `apps/api`
 - Deploy Web as one Vercel project with Root Directory: `apps/web`
-- Set `NEXT_PUBLIC_API_URL` in Web project to the API project URL
+- Set `NEXT_PUBLIC_API_URL` in Web project to the API project URL (origin is recommended, e.g. `https://api.example.com`)
 
 ## API Project
 - Root Directory: `apps/api`
@@ -22,6 +22,7 @@
 - `CORS_ORIGIN`
 - `HASH_SALT`
 - `TURNSTILE_SECRET_KEY`
+- `TURNSTILE_ALLOW_BYPASS` (set to `false` in production)
 - `ADMIN_WHITELIST`
 - `GITHUB_CLIENT_ID`
 - `GITHUB_CLIENT_SECRET`
@@ -36,6 +37,7 @@
 - `TELEGRAM_CHAT_ID`
 - `TELEGRAM_API_BASE_URL`
 - `TELEGRAM_NOTIFY_ON_NEW_CASE`
+- `CACHE_LIMIT_FAIL_OPEN` (set to `false` in production)
 
 ## Web Project
 - Root Directory: `apps/web`

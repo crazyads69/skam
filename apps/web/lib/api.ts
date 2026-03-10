@@ -7,9 +7,9 @@ import type {
   ScammerProfile,
   SocialPlatform,
 } from "@skam/shared/types";
+import { getApiBaseUrl } from "@/lib/site";
 
-const defaultApiUrl: string = "http://localhost:4000/api/v1";
-export const apiUrl: string = process.env.NEXT_PUBLIC_API_URL ?? defaultApiUrl;
+export const apiUrl: string = getApiBaseUrl();
 
 interface ApiRequestInit extends Omit<RequestInit, "body"> {
   body?: unknown;
@@ -35,13 +35,19 @@ async function apiRequest<T>(path: string, init?: ApiRequestInit): Promise<T> {
   });
   if (!response.ok) {
     const payload: unknown = await response.json().catch(() => null);
-    const message: string =
+    const messageField: unknown =
       typeof payload === "object" &&
       payload !== null &&
       "message" in payload &&
-      typeof (payload as { message?: unknown }).message === "string"
-        ? (payload as { message: string }).message
-        : `HTTP ${response.status}`;
+      (payload as { message?: unknown }).message
+        ? (payload as { message: unknown }).message
+        : null;
+    const message: string =
+      typeof messageField === "string"
+        ? messageField
+        : Array.isArray(messageField)
+          ? messageField.filter((item): item is string => typeof item === "string").join(", ")
+          : `HTTP ${response.status}`;
     throw new Error(message);
   }
   return response.json() as Promise<T>;
