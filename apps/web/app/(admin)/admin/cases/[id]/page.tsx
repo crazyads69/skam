@@ -54,7 +54,12 @@ export default async function AdminCaseDetailPage({
     "use server";
     const token = await getAdminTokenFromCookie();
     if (!token) redirect("/admin/login");
-    await approveAdminCase(token, id, undefined);
+    const latestCaseResponse = await getAdminCase(token, id).catch(() => null);
+    const refinedDescription =
+      latestCaseResponse?.success && latestCaseResponse.data?.refinedDescription
+        ? latestCaseResponse.data.refinedDescription.trim()
+        : undefined;
+    await approveAdminCase(token, id, refinedDescription || undefined);
     revalidatePath("/admin");
     redirect("/admin");
   }
@@ -133,11 +138,7 @@ export default async function AdminCaseDetailPage({
         </Card>
         <Card className="p-5">
           <form action={rejectAction} className="grid gap-3">
-            <Input
-              name="reason"
-              placeholder="Lý do từ chối"
-              required
-            />
+            <Input name="reason" placeholder="Lý do từ chối" required />
             <Button type="submit" variant="danger" size="lg" className="w-full">
               Từ chối vụ việc
             </Button>
