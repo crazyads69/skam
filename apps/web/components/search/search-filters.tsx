@@ -45,7 +45,6 @@ export default function SearchFilters({
 
   return (
     <form
-      action="/search"
       onSubmit={onSubmit}
       className="grid gap-3 sm:grid-cols-[1fr_220px_120px]"
     >
@@ -68,8 +67,6 @@ export default function SearchFilters({
           ))}
         </SelectContent>
       </Select>
-      <input type="hidden" name="page" value="1" />
-      <input type="hidden" name="bankCode" value={bankCode === "_all" ? "" : bankCode} />
       <Button type="submit" variant="neon-outline" className="h-11">
         Lọc
       </Button>
