@@ -19,6 +19,7 @@
   --text-inverse: #000000;
   --border-default: hsl(0 0% 100% / 0.08);
   --border-hover: hsl(0 0% 100% / 0.15);
+  --border-neon: hsl(150 100% 50% / 0.2);
   --status-safe: #00ff80;
   --status-safe-bg: hsl(150 100% 50% / 0.08);
   --status-danger: #eb4747;
@@ -126,7 +127,7 @@ body {
 }
 
 body {
-  font-family: Inter, system-ui, sans-serif;
+  font-family: var(--font-sans, Inter), system-ui, sans-serif;
   line-height: 1.6;
   background-color: var(--surface-base);
   background-image:

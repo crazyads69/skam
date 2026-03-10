@@ -11,6 +11,7 @@ import { AdminGuard } from "../auth/guards/admin.guard";
 import { CacheService } from "../cache/cache.service";
 import { assertAllowedWriteOrigin } from "../common/request-origin";
 import { resolveRequestIdentifier } from "../common/request-identifier";
+import { TurnstileService } from "../turnstile/turnstile.service";
 import { PublicViewUrlDto } from "./dto/public-view-url.dto";
 import { UploadPresignDto } from "./dto/upload-presign.dto";
 import { ViewUrlDto } from "./dto/view-url.dto";
@@ -21,6 +22,7 @@ export class StorageController {
   public constructor(
     private readonly storageService: StorageService,
     private readonly cacheService: CacheService,
+    private readonly turnstileService: TurnstileService,
   ) {}
 
   @Post("presign")
@@ -43,6 +45,30 @@ export class StorageController {
     );
     if (!allowed) {
       throw new HttpException("Vượt giới hạn tải lên", 429);
+    }
+    const dailyAllowed: boolean = await this.cacheService.fixedWindowLimit(
+      `ratelimit:upload-daily:${identifier}`,
+      50,
+      60 * 60 * 24,
+    );
+    if (!dailyAllowed) {
+      throw new HttpException("Vượt giới hạn tải lên hàng ngày", 429);
+    }
+    if (this.turnstileService.isEnabled()) {
+      const turnstileToken: string = String(
+        Array.isArray(request.headers['x-turnstile-token'])
+          ? request.headers['x-turnstile-token'][0]
+          : request.headers['x-turnstile-token'] ?? '',
+      ).trim();
+      if (turnstileToken) {
+        const isValid: boolean = await this.turnstileService.verify(
+          turnstileToken,
+          request.ip,
+        );
+        if (!isValid) {
+          throw new HttpException("Turnstile token không hợp lệ", 400);
+        }
+      }
     }
     const data = await this.storageService.presignUpload(payload);
     return { success: true, data };

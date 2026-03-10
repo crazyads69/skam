@@ -51,7 +51,7 @@ export function ResultCard({
       <div className="flex gap-6 text-sm text-[var(--text-secondary)]">
         <span className="inline-flex items-center gap-1.5">
           <Users className="size-4" />
-          {reportCount} báo cáo
+          {reportCount} lượt xem
         </span>
         {lastReported ? (
           <span className="inline-flex items-center gap-1.5">

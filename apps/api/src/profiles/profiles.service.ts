@@ -11,17 +11,28 @@ interface ProfilePayload extends ScammerProfile {
 export class ProfilesService {
   public constructor(private readonly prisma: PrismaService) {}
 
-  public async getByIdentifier(identifier: string): Promise<ProfilePayload> {
-    const profile = await this.prisma.scammerProfile.findUnique({
-      where: { bankIdentifier: identifier },
-      include: {
-        cases: {
-          where: { status: CaseStatus.APPROVED },
-          orderBy: { createdAt: 'desc' },
-          take: 5
-        }
-      }
-    })
+  public async getByIdentifier(identifier: string, bankCode?: string): Promise<ProfilePayload> {
+    const profile = bankCode
+      ? await this.prisma.scammerProfile.findUnique({
+          where: { bankIdentifier_bankCode: { bankIdentifier: identifier, bankCode } },
+          include: {
+            cases: {
+              where: { status: CaseStatus.APPROVED },
+              orderBy: { createdAt: 'desc' },
+              take: 5
+            }
+          }
+        })
+      : await this.prisma.scammerProfile.findFirst({
+          where: { bankIdentifier: identifier },
+          include: {
+            cases: {
+              where: { status: CaseStatus.APPROVED },
+              orderBy: { createdAt: 'desc' },
+              take: 5
+            }
+          }
+        })
     if (!profile) throw new NotFoundException('Không tìm thấy hồ sơ')
     return {
       id: profile.id,

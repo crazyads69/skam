@@ -1,4 +1,4 @@
-import { Controller, Get, HttpException, Query, Req } from '@nestjs/common'
+import { Controller, Get, Header, HttpException, Query, Req } from '@nestjs/common'
 import type { ApiResponse } from '@skam/shared/src/types'
 import { resolveRequestIdentifier } from '../common/request-identifier'
 import { CacheService } from '../cache/cache.service'
@@ -12,6 +12,7 @@ export class BanksController {
   ) {}
 
   @Get()
+  @Header('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400')
   public async listBanks(@Req() request: { ip?: string; headers: Record<string, string | string[] | undefined> }): Promise<ApiResponse<Awaited<ReturnType<BanksService['listBanks']>>>> {
     await this.enforceReadLimit(request)
     const data = await this.banksService.listBanks()
@@ -24,7 +25,12 @@ export class BanksController {
     @Query('q') query: string
   ): Promise<ApiResponse<Awaited<ReturnType<BanksService['searchBanks']>>>> {
     await this.enforceReadLimit(request)
-    const data = await this.banksService.searchBanks(query ?? '')
+    const q: string = (query ?? '').trim()
+    if (q.length < 1) {
+      const data = await this.banksService.listBanks()
+      return { success: true, data }
+    }
+    const data = await this.banksService.searchBanks(q)
     return { success: true, data }
   }
 

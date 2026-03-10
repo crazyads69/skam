@@ -7,13 +7,23 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 
-export default async function AdminDashboardPage(): Promise<ReactElement> {
+interface AdminDashboardPageProps {
+  searchParams: Promise<{ page?: string }>;
+}
+
+export default async function AdminDashboardPage({
+  searchParams,
+}: AdminDashboardPageProps): Promise<ReactElement> {
+  const params = await searchParams;
+  const currentPage = Math.max(1, Number(params.page ?? "1") || 1);
+  const pageSize = 20;
   const token = await getAdminTokenFromCookie();
   const pending = token
-    ? await listAdminCases(token, CaseStatus.PENDING).catch(() => null)
+    ? await listAdminCases(token, CaseStatus.PENDING, currentPage, pageSize).catch(() => null)
     : null;
   const analytics = token ? await getAdminAnalytics(token).catch(() => null) : null;
   const breakdown = analytics?.data?.statusBreakdown ?? {};
+  const totalPages = pending?.totalPages ?? 1;
   return (
     <section className="grid gap-4">
       <div className="grid gap-4 sm:grid-cols-4">
@@ -74,6 +84,27 @@ export default async function AdminDashboardPage(): Promise<ReactElement> {
           </Card>
         ))}
       </div>
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-4">
+          {currentPage > 1 && (
+            <Link href={`/admin?page=${currentPage - 1}`}>
+              <Button variant="neon-outline" size="default">
+                ← Trang trước
+              </Button>
+            </Link>
+          )}
+          <span className="text-sm text-[var(--text-secondary)]">
+            Trang {currentPage} / {totalPages}
+          </span>
+          {currentPage < totalPages && (
+            <Link href={`/admin?page=${currentPage + 1}`}>
+              <Button variant="neon-outline" size="default">
+                Trang sau →
+              </Button>
+            </Link>
+          )}
+        </div>
+      )}
     </section>
   );
 }

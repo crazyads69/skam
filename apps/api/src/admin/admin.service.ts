@@ -244,7 +244,7 @@ export class AdminService {
     });
     if (approvedCases.length === 0) {
       await client.scammerProfile.deleteMany({
-        where: { bankIdentifier },
+        where: { bankIdentifier, bankCode },
       });
     } else {
       const totalCases: number = approvedCases.length;
@@ -260,7 +260,7 @@ export class AdminService {
           .map((item) => item.scammerName)
           .filter((item): item is string => Boolean(item))[0] ?? null;
       const profile = await client.scammerProfile.upsert({
-        where: { bankIdentifier },
+        where: { bankIdentifier_bankCode: { bankIdentifier, bankCode } },
         create: {
           bankIdentifier,
           bankCode,

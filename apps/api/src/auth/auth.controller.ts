@@ -63,7 +63,14 @@ export class AuthController {
   }
 
   @Post('logout')
-  public logout(): ApiResponse<{ revoked: boolean }> {
+  public async logout(
+    @Req() request: { headers: Record<string, string | string[] | undefined> }
+  ): Promise<ApiResponse<{ revoked: boolean }>> {
+    const authHeader = request.headers.authorization
+    const raw: string = Array.isArray(authHeader) ? authHeader[0] ?? '' : authHeader ?? ''
+    if (raw.startsWith('Bearer ')) {
+      await this.authService.revokeToken(raw.slice('Bearer '.length).trim())
+    }
     return {
       success: true,
       data: { revoked: true }

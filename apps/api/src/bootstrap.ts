@@ -17,5 +17,5 @@ export function applyAppRuntime(app: INestApplication): void {
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean)
-  app.enableCors({ origin: corsOrigins })
+  app.enableCors({ origin: corsOrigins, credentials: true })
 }

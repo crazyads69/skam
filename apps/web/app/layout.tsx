@@ -48,19 +48,21 @@ interface RootLayoutProps {
 const inter = Inter({
   subsets: ["latin", "vietnamese"],
   display: "swap",
+  variable: "--font-sans",
 });
 
 const jetbrains = JetBrains_Mono({
   subsets: ["latin", "vietnamese"],
   display: "swap",
+  variable: "--font-mono",
 });
 
 export default function RootLayout({
   children,
 }: RootLayoutProps): ReactElement {
   return (
-    <html lang="vi">
-      <body className={`${inter.className} ${jetbrains.className}`}>
+    <html lang="vi" className={`${inter.variable} ${jetbrains.variable}`}>
+      <body className={inter.className}>
         <NavBar />
         {children}
       </body>

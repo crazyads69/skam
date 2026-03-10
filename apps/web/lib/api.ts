@@ -38,6 +38,13 @@ async function apiRequest<T>(path: string, init?: ApiRequestInit): Promise<T> {
   });
   if (!response.ok) {
     const payload: unknown = await response.json().catch(() => null);
+    const errorField: unknown =
+      typeof payload === "object" &&
+      payload !== null &&
+      "error" in payload &&
+      (payload as { error?: unknown }).error
+        ? (payload as { error: unknown }).error
+        : null;
     const messageField: unknown =
       typeof payload === "object" &&
       payload !== null &&
@@ -45,11 +52,12 @@ async function apiRequest<T>(path: string, init?: ApiRequestInit): Promise<T> {
       (payload as { message?: unknown }).message
         ? (payload as { message: unknown }).message
         : null;
+    const raw: unknown = errorField ?? messageField;
     const message: string =
-      typeof messageField === "string"
-        ? messageField
-        : Array.isArray(messageField)
-          ? messageField
+      typeof raw === "string"
+        ? raw
+        : Array.isArray(raw)
+          ? raw
               .filter((item): item is string => typeof item === "string")
               .join(", ")
           : `HTTP ${response.status}`;
@@ -205,9 +213,13 @@ export async function exchangeAdminCode(code: string): Promise<
 export async function listAdminCases(
   token: string,
   status?: CaseStatus,
+  page: number = 1,
+  pageSize: number = 20,
 ): Promise<PaginatedResponse<ScamCase>> {
   const searchParams = new URLSearchParams();
   if (status) searchParams.set("status", status);
+  searchParams.set("page", String(page));
+  searchParams.set("pageSize", String(pageSize));
   return apiRequest(
     `/admin/cases${searchParams.size ? `?${searchParams.toString()}` : ""}`,
     { token },

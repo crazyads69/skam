@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer'
-import { IsArray, IsEnum, IsNumber, IsOptional, IsString, IsUrl, Max, MaxLength, Min, MinLength, ValidateNested } from 'class-validator'
+import { IsArray, IsEnum, IsNumber, IsOptional, IsString, IsUrl, Matches, Max, MaxLength, Min, MinLength, ValidateNested } from 'class-validator'
 import { SocialPlatform } from '@skam/shared/src/types'
 
 export class CreateSocialLinkDto {
@@ -47,8 +47,9 @@ export class CreateEvidenceFileDto {
 
 export class CreateCaseDto {
   @IsString()
-  @MinLength(6)
+  @MinLength(8)
   @MaxLength(40)
+  @Matches(/^\d{8,20}$/, { message: 'Số tài khoản phải từ 8-20 chữ số' })
   public bankIdentifier!: string
 
   @IsString()
@@ -64,6 +65,7 @@ export class CreateCaseDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
+  @Max(100_000_000_000)
   public amount?: number
 
   @IsOptional()

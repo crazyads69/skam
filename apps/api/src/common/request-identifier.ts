@@ -6,8 +6,9 @@ export interface RequestLike {
 export function resolveRequestIdentifier(request: RequestLike): string {
   const fallback: string = request.ip ?? 'unknown'
   if ((process.env.TRUST_PROXY_HEADERS ?? 'false') !== 'true') return fallback
-  const forwardedFor: string | string[] | undefined = request.headers['x-forwarded-for']
-  const rawValue: string | undefined = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor
+  const trustedHeader: string = process.env.TRUSTED_PROXY_HEADER ?? 'x-vercel-forwarded-for'
+  const headerValue: string | string[] | undefined = request.headers[trustedHeader]
+  const rawValue: string | undefined = Array.isArray(headerValue) ? headerValue[0] : headerValue
   const candidate: string = rawValue?.split(',')[0]?.trim() ?? fallback
   if (!candidate) return fallback
   if (candidate.length > 128) return fallback

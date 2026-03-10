@@ -263,10 +263,11 @@ export type ScammerProfileOrderByWithRelationInput = {
 
 export type ScammerProfileWhereUniqueInput = Prisma.AtLeast<{
   id?: string
-  bankIdentifier?: string
+  bankIdentifier_bankCode?: Prisma.ScammerProfileBankIdentifierBankCodeCompoundUniqueInput
   AND?: Prisma.ScammerProfileWhereInput | Prisma.ScammerProfileWhereInput[]
   OR?: Prisma.ScammerProfileWhereInput[]
   NOT?: Prisma.ScammerProfileWhereInput | Prisma.ScammerProfileWhereInput[]
+  bankIdentifier?: Prisma.StringFilter<"ScammerProfile"> | string
   bankCode?: Prisma.StringFilter<"ScammerProfile"> | string
   scammerName?: Prisma.StringNullableFilter<"ScammerProfile"> | string | null
   totalCases?: Prisma.IntFilter<"ScammerProfile"> | number
@@ -275,7 +276,7 @@ export type ScammerProfileWhereUniqueInput = Prisma.AtLeast<{
   lastReportedAt?: Prisma.DateTimeFilter<"ScammerProfile"> | Date | string
   cases?: Prisma.ScamCaseListRelationFilter
   socialLinks?: Prisma.SocialLinkListRelationFilter
-}, "id" | "bankIdentifier">
+}, "id" | "bankIdentifier_bankCode">
 
 export type ScammerProfileOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -395,6 +396,11 @@ export type ScammerProfileUncheckedUpdateManyInput = {
 export type ScammerProfileNullableScalarRelationFilter = {
   is?: Prisma.ScammerProfileWhereInput | null
   isNot?: Prisma.ScammerProfileWhereInput | null
+}
+
+export type ScammerProfileBankIdentifierBankCodeCompoundUniqueInput = {
+  bankIdentifier: string
+  bankCode: string
 }
 
 export type ScammerProfileCountOrderByAggregateInput = {

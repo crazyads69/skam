@@ -15,8 +15,10 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage(): Promise<ReactElement> {
-  const summary = await getSummary().catch(() => null);
-  const recent = await getRecentCases(1, 6).catch(() => null);
+  const [summary, recent] = await Promise.all([
+    getSummary().catch(() => null),
+    getRecentCases(1, 6).catch(() => null),
+  ]);
   const totalCases: number = summary?.data?.totalCases ?? 0;
   const totalApprovedCases: number = summary?.data?.totalApprovedCases ?? 0;
   const totalScamAmount: number = summary?.data?.totalScamAmount ?? 0;

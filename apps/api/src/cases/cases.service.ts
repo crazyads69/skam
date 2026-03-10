@@ -103,13 +103,14 @@ export class CasesService {
       },
     });
     const result: ScamCase = mapScamCase(created);
-    await this.telegramNotifier.notifyNewCase(result);
+    this.telegramNotifier.notifyNewCase(result).catch(() => {});
     return result;
   }
 
   public async searchCases(query: SearchCaseDto): Promise<SearchResult> {
     const rawQuery: string = query.q.trim();
-    const searchPattern: string = `%${rawQuery.toLowerCase()}%`;
+    const escaped: string = rawQuery.toLowerCase().replace(/[%_\\]/g, '\\$&');
+    const searchPattern: string = `%${escaped}%`;
     const page: number = query.page;
     const pageSize: number = query.pageSize;
     const skip: number = (page - 1) * pageSize;
@@ -124,8 +125,8 @@ export class CasesService {
             WHERE status = ${CaseStatus.APPROVED}
               AND bankCode = ${normalizedBankCode}
               AND (
-                LOWER(bankIdentifier) LIKE ${searchPattern}
-                OR LOWER(COALESCE(scammerName, '')) LIKE ${searchPattern}
+                LOWER(bankIdentifier) LIKE ${searchPattern} ESCAPE '\\'
+                OR LOWER(COALESCE(scammerName, '')) LIKE ${searchPattern} ESCAPE '\\'
               )
             ORDER BY createdAt DESC
             LIMIT ${pageSize}
@@ -137,8 +138,8 @@ export class CasesService {
             WHERE status = ${CaseStatus.APPROVED}
               AND bankCode = ${normalizedBankCode}
               AND (
-                LOWER(bankIdentifier) LIKE ${searchPattern}
-                OR LOWER(COALESCE(scammerName, '')) LIKE ${searchPattern}
+                LOWER(bankIdentifier) LIKE ${searchPattern} ESCAPE '\\'
+                OR LOWER(COALESCE(scammerName, '')) LIKE ${searchPattern} ESCAPE '\\'
               )
           `,
         ])
@@ -148,8 +149,8 @@ export class CasesService {
             FROM "ScamCase"
             WHERE status = ${CaseStatus.APPROVED}
               AND (
-                LOWER(bankIdentifier) LIKE ${searchPattern}
-                OR LOWER(COALESCE(scammerName, '')) LIKE ${searchPattern}
+                LOWER(bankIdentifier) LIKE ${searchPattern} ESCAPE '\\'
+                OR LOWER(COALESCE(scammerName, '')) LIKE ${searchPattern} ESCAPE '\\'
               )
             ORDER BY createdAt DESC
             LIMIT ${pageSize}
@@ -160,8 +161,8 @@ export class CasesService {
             FROM "ScamCase"
             WHERE status = ${CaseStatus.APPROVED}
               AND (
-                LOWER(bankIdentifier) LIKE ${searchPattern}
-                OR LOWER(COALESCE(scammerName, '')) LIKE ${searchPattern}
+                LOWER(bankIdentifier) LIKE ${searchPattern} ESCAPE '\\'
+                OR LOWER(COALESCE(scammerName, '')) LIKE ${searchPattern} ESCAPE '\\'
               )
           `,
         ]);
@@ -239,15 +240,24 @@ export class CasesService {
       1,
       viewWindowSeconds,
     );
-    const updated = await this.prisma.scamCase.update({
-      where: { id: found.id },
-      data: canCountView ? { viewCount: { increment: 1 } } : {},
-      include: {
-        evidenceFiles: true,
-        socialLinks: true,
-      },
-    });
-    return mapScamCase(updated);
+    const result = canCountView
+      ? await this.prisma.scamCase.update({
+          where: { id: found.id },
+          data: { viewCount: { increment: 1 } },
+          include: {
+            evidenceFiles: true,
+            socialLinks: true,
+          },
+        })
+      : await this.prisma.scamCase.findUnique({
+          where: { id: found.id },
+          include: {
+            evidenceFiles: true,
+            socialLinks: true,
+          },
+        });
+    if (!result) throw new NotFoundException("Không tìm thấy vụ việc");
+    return mapScamCase(result);
   }
 
   private hashValue(value: string): string {

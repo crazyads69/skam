@@ -55,7 +55,7 @@ model ScamCase {
 
 model ScammerProfile {
   id             String     @id @default(cuid())
-  bankIdentifier String     @unique
+  bankIdentifier String
   bankCode       String
   scammerName    String?
   totalCases     Int        @default(0)
@@ -64,6 +64,8 @@ model ScammerProfile {
   lastReportedAt  DateTime
   cases          ScamCase[]
   socialLinks    SocialLink[]
+
+  @@unique([bankIdentifier, bankCode])
 }
 
 model EvidenceFile {
