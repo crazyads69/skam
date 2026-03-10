@@ -9,6 +9,7 @@ function assertProductionEnv(): void {
     'NEXTAUTH_SECRET',
     'CORS_ORIGIN',
     'ADMIN_WHITELIST',
+    'TURNSTILE_SECRET_KEY',
     'GITHUB_CLIENT_ID',
     'GITHUB_CLIENT_SECRET',
     'GITHUB_CALLBACK_URL'
