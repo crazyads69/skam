@@ -15,7 +15,7 @@ export default function AdminLoginPage(): ReactElement {
       <AdminTokenSync />
       <GlassCard className="mx-auto max-w-lg p-6">
         <h1 className="mb-2 text-2xl font-semibold">Đăng nhập quản trị</h1>
-        <p className="mb-6 text-sm text-[var(--text-secondary)]">
+        <p className="mb-6 text-sm text-(--text-secondary)">
           Đăng nhập bằng GitHub, chỉ tài khoản có trong whitelist mới được truy
           cập.
         </p>

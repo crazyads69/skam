@@ -1,12 +1,25 @@
 import type { ReactElement } from "react";
-import { Card } from "@/components/ui/card";
+import { Loader2, ShieldCheck } from "lucide-react";
 
 export default function AdminLoading(): ReactElement {
   return (
-    <main className="skam-container py-8">
-      <Card className="p-5 text-sm text-[var(--text-secondary)]">
+    <div
+      role="status"
+      aria-busy="true"
+      aria-label="Đang tải dữ liệu quản trị"
+      className="flex min-h-[40vh] flex-col items-center justify-center gap-4 py-16"
+    >
+      <div className="relative">
+        <ShieldCheck
+          className="size-10 text-neon/30"
+          aria-hidden="true"
+          strokeWidth={1.5}
+        />
+        <Loader2 className="absolute inset-0 m-auto size-6 animate-spin text-neon" />
+      </div>
+      <p className="text-sm text-(--text-secondary)">
         Đang tải dữ liệu quản trị...
-      </Card>
-    </main>
+      </p>
+    </div>
   );
 }

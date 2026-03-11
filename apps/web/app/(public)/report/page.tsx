@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
 import { createCase, getBanks, presignUpload } from "@/lib/api";
 import { normalizeUserText } from "@/lib/sanitize";
+import { AlertTriangle, Lock } from "lucide-react";
 
 const maxEvidenceFiles: number = 5;
 const maxEvidenceFileSize: number = 100 * 1024 * 1024;
@@ -203,53 +204,92 @@ export default function ReportPage(): ReactElement {
   }
 
   return (
-    <main className="skam-container py-8">
-      <GlassCard className="mx-auto max-w-3xl p-6">
-        <h1 className="mb-2 text-2xl font-semibold">
-          Báo cáo tài khoản lừa đảo
-        </h1>
-        <p className="mb-6 text-sm text-(--text-secondary)">
-          Thông tin sẽ được kiểm duyệt trước khi công khai.
-        </p>
-        <FormProvider {...methods}>
-          <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
-            <StepIndicator
-              steps={["Tài khoản", "Chi tiết", "Bằng chứng"]}
-              currentStep={
-                formState.dirtyFields.originalDescription
-                  ? 3
-                  : formState.dirtyFields.bankIdentifier
-                    ? 2
-                    : 1
-              }
-            />
-            <BankAccountFields banks={banks} />
-            <CaseDetailsFields />
-            <SocialLinksEditor />
-            <p className="mt-2 text-sm font-medium text-foreground">
-              Bước 3: Bằng chứng và xác minh
-            </p>
-            <EvidenceUploader
-              onUploadFiles={onUploadFiles}
-              onError={(message) => setStatus(message)}
-            />
-            <div id="turnstile-widget" />
-
-            <Button
-              type="submit"
-              variant="neon"
-              size="lg"
-              disabled={formState.isSubmitting}
-            >
-              {formState.isSubmitting ? "Đang gửi..." : "Gửi báo cáo"}
-            </Button>
-          </form>
-        </FormProvider>
-        <ReportFormSummary
-          status={status}
-          platformsLabel={Object.values(SocialPlatform).join(", ")}
+    <main className="relative z-10">
+      {/* ─── Report Hero ─── */}
+      <section className="hero-scanline relative overflow-hidden border-b border-(--border-default) py-10 md:py-14">
+        <div
+          className="hero-grid pointer-events-none absolute inset-0"
+          aria-hidden="true"
         />
-      </GlassCard>
+        <div className="skam-container relative">
+          <div className="mx-auto max-w-3xl">
+            <div className="mb-2 flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-(--status-danger-bg) ring-1 ring-(--status-danger)/20">
+                <AlertTriangle
+                  className="size-5 text-danger"
+                  aria-hidden="true"
+                />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold tracking-tight md:text-2xl">
+                  Báo cáo tài khoản lừa đảo
+                </h1>
+                <p className="text-xs text-(--text-tertiary)">
+                  Thông tin sẽ được kiểm duyệt trước khi công khai
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Form ─── */}
+      <section className="skam-container py-8 md:py-10">
+        <GlassCard className="mx-auto max-w-3xl p-6 md:p-8">
+          <FormProvider {...methods}>
+            <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
+              <StepIndicator
+                steps={["Tài khoản", "Chi tiết", "Bằng chứng"]}
+                currentStep={
+                  formState.dirtyFields.originalDescription
+                    ? 3
+                    : formState.dirtyFields.bankIdentifier
+                      ? 2
+                      : 1
+                }
+              />
+              <BankAccountFields banks={banks} />
+              <CaseDetailsFields />
+              <SocialLinksEditor />
+              <p className="mt-2 text-sm font-medium text-foreground">
+                Bước 3: Bằng chứng và xác minh
+              </p>
+              <EvidenceUploader
+                onUploadFiles={onUploadFiles}
+                onError={(message) => setStatus(message)}
+              />
+              <div id="turnstile-widget" />
+
+              <Button
+                type="submit"
+                variant="neon"
+                size="lg"
+                disabled={formState.isSubmitting}
+              >
+                {formState.isSubmitting ? "Đang gửi..." : "Gửi báo cáo"}
+              </Button>
+            </form>
+          </FormProvider>
+          <ReportFormSummary
+            status={status}
+            platformsLabel={Object.values(SocialPlatform).join(", ")}
+          />
+        </GlassCard>
+
+        {/* Info note */}
+        <GlassCard className="mx-auto mt-4 max-w-3xl p-4">
+          <div className="flex items-start gap-3">
+            <Lock
+              className="mt-0.5 size-4 shrink-0 text-neon"
+              aria-hidden="true"
+            />
+            <p className="text-xs leading-relaxed text-(--text-secondary)">
+              Mọi thông tin bạn cung cấp đều được bảo mật. Báo cáo chỉ được công
+              khai sau khi đội ngũ quản trị viên xác minh và kiểm duyệt.
+            </p>
+          </div>
+        </GlassCard>
+      </section>
     </main>
   );
 }

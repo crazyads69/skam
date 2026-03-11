@@ -17,17 +17,17 @@ export default function SearchForm(): ReactElement {
       onSubmit={() => setIsSubmitting(true)}
     >
       <div className="relative flex-1">
-        <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-[var(--text-disabled)]" />
+        <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-(--text-disabled)" />
         <Input
           name="q"
           aria-label="Nhập số tài khoản hoặc tên lừa đảo"
           placeholder="Nhập số tài khoản hoặc tên lừa đảo"
           className={cn(
             "h-14 pl-12 pr-4 text-lg font-mono",
-            "bg-[var(--surface-1)] border-[var(--border-default)]",
-            "placeholder:text-[var(--text-disabled)]",
-            "focus:border-[var(--neon-green)] focus:ring-2 focus:ring-[var(--neon-green)]/20",
-            "focus:shadow-[var(--shadow-neon)]",
+            "bg-surface-1 border-(--border-default)",
+            "placeholder:text-(--text-disabled)",
+            "focus:border-neon focus:ring-2 focus:ring-(--neon-green)/20",
+            "focus:shadow-(--shadow-neon)",
             "rounded-xl transition-all duration-200",
           )}
           required

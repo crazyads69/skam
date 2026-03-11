@@ -15,18 +15,18 @@ export function GlassCard({
       data-slot="glass-card"
       className={cn(
         // Base glass effect
-        "rounded-xl border backdrop-blur-[var(--glass-blur)]",
-        "bg-[var(--glass-bg)] border-[var(--glass-border)]",
+        "rounded-xl border backdrop-blur-(--glass-blur)",
+        "bg-(--glass-bg) border-(--glass-border)",
         "transition-all duration-300",
         // Variants
-        variant === "default" && "shadow-[var(--shadow-sm)]",
+        variant === "default" && "shadow-(--shadow-sm)",
         variant === "elevated" && [
-          "bg-[var(--glass-bg-hover)]",
-          "shadow-[var(--shadow-md)]",
+          "bg-(--glass-bg-hover)",
+          "shadow-(--shadow-md)",
         ],
         variant === "neon" && [
-          "border-[var(--border-neon)]",
-          "shadow-[var(--shadow-neon)]",
+          "border-(--border-neon)",
+          "shadow-(--shadow-neon)",
         ],
         className,
       )}

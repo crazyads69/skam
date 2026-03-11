@@ -32,7 +32,7 @@ export function EvidenceUploader({
 
   return (
     <>
-      <label className="block rounded-lg border border-dashed border-border p-4 text-sm text-[var(--text-secondary)]">
+      <label className="block rounded-lg border border-dashed border-border p-4 text-sm text-(--text-secondary)">
         <span className="mb-2 inline-flex items-center gap-2 text-foreground">
           <Upload className="size-4 text-neon" />
           Tải bằng chứng (tối đa 5 tệp)
@@ -59,9 +59,12 @@ export function EvidenceUploader({
         />
       </label>
       {fields.length > 0 ? (
-        <ul className="grid gap-1 text-xs text-[var(--text-tertiary)]">
+        <ul className="grid gap-1 text-xs text-(--text-tertiary)">
           {fields.map((item, index) => (
-            <li key={item.id} className="flex items-center justify-between gap-2">
+            <li
+              key={item.id}
+              className="flex items-center justify-between gap-2"
+            >
               <span>
                 {item.fileName} · {(item.fileSize / 1024).toFixed(1)} KB
               </span>

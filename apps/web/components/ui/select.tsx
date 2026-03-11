@@ -33,7 +33,7 @@ function SelectTrigger({
       data-slot="select-trigger"
       className={cn(
         "inline-flex h-11 w-full items-center justify-between gap-2 rounded-lg border border-border bg-surface-1 px-3 text-left text-sm leading-5 text-foreground",
-        "data-[placeholder]:text-[var(--text-disabled)]",
+        "data-[placeholder]:text-(--text-disabled)",
         "focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-neon",
         "disabled:cursor-not-allowed disabled:opacity-50",
         className,
@@ -132,7 +132,7 @@ function SelectLabel({
     <SelectPrimitive.Label
       data-slot="select-label"
       className={cn(
-        "px-2 py-1.5 text-xs font-medium text-[var(--text-tertiary)]",
+        "px-2 py-1.5 text-xs font-medium text-(--text-tertiary)",
         className,
       )}
       {...props}

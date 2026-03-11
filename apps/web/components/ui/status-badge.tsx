@@ -26,31 +26,31 @@ const statusConfig = {
     label: "An toàn",
     icon: ShieldCheck,
     className:
-      "bg-[var(--status-safe-bg)] text-[var(--status-safe)] border-[var(--status-safe)]/20",
+      "bg-(--status-safe-bg) text-(--status-safe) border-(--status-safe)/20",
   },
   danger: {
     label: "Nguy hiểm",
     icon: ShieldAlert,
     className:
-      "bg-[var(--status-danger-bg)] text-[var(--status-danger)] border-[var(--status-danger)]/20",
+      "bg-(--status-danger-bg) text-(--status-danger) border-(--status-danger)/20",
   },
   warning: {
     label: "Đáng ngờ",
     icon: ShieldQuestion,
     className:
-      "bg-[var(--status-warning-bg)] text-[var(--status-warning)] border-[var(--status-warning)]/20",
+      "bg-(--status-warning-bg) text-(--status-warning) border-(--status-warning)/20",
   },
   pending: {
     label: "Đang xem xét",
     icon: Clock,
     className:
-      "bg-[var(--status-pending-bg)] text-[var(--status-pending)] border-[var(--status-pending)]/20",
+      "bg-(--status-pending-bg) text-(--status-pending) border-(--status-pending)/20",
   },
   info: {
     label: "Thông tin",
     icon: Info,
     className:
-      "bg-[var(--status-info-bg)] text-[var(--status-info)] border-[var(--status-info)]/20",
+      "bg-(--status-info-bg) text-(--status-info) border-(--status-info)/20",
   },
 } as const;
 

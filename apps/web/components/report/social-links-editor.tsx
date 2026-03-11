@@ -28,9 +28,7 @@ export function SocialLinksEditor(): ReactElement {
         Liên kết mạng xã hội liên quan
       </p>
       {fields.length === 0 ? (
-        <p className="text-xs text-[var(--text-tertiary)]">
-          Chưa có liên kết nào.
-        </p>
+        <p className="text-xs text-(--text-tertiary)">Chưa có liên kết nào.</p>
       ) : null}
       {fields.map((field, index) => (
         <div

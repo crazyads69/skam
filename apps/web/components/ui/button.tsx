@@ -8,7 +8,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-xs hover:bg-neon-light hover:shadow-[var(--shadow-neon)]",
+          "bg-primary text-primary-foreground shadow-xs hover:bg-neon-light hover:shadow-(--shadow-neon)",
         destructive:
           "bg-destructive text-white shadow-xs hover:bg-destructive/90",
         outline:
@@ -19,23 +19,23 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         // SKAM custom variants
         neon: [
-          "bg-[var(--neon-green)] text-black font-semibold",
-          "shadow-[var(--shadow-neon)]",
-          "hover:bg-[var(--neon-green-light)]",
-          "hover:shadow-[var(--shadow-neon-strong)]",
-          "active:bg-[var(--neon-green-dark)]",
+          "bg-(--neon-green) text-black font-semibold",
+          "shadow-(--shadow-neon)",
+          "hover:bg-(--neon-green-light)",
+          "hover:shadow-(--shadow-neon-strong)",
+          "active:bg-(--neon-green-dark)",
           "transition-all duration-200",
         ].join(" "),
         "neon-outline": [
-          "border border-[var(--neon-green)] text-[var(--neon-green)]",
+          "border border-(--neon-green) text-(--neon-green)",
           "bg-transparent",
-          "hover:bg-[var(--neon-green-ghost)]",
-          "hover:shadow-[var(--shadow-neon)]",
-          "active:bg-[var(--neon-green-ghost)]",
+          "hover:bg-(--neon-green-ghost)",
+          "hover:shadow-(--shadow-neon)",
+          "active:bg-(--neon-green-ghost)",
         ].join(" "),
         danger: [
           "bg-destructive text-destructive-foreground font-semibold",
-          "shadow-[var(--shadow-danger)]",
+          "shadow-(--shadow-danger)",
           "hover:bg-destructive/90",
         ].join(" "),
       },
