@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { getCase, getPublicEvidenceViewUrl } from "@/lib/api";
 import { resolveEvidenceUrls } from "@/lib/evidence-urls";
 import { formatMoneyVnd } from "@/lib/utils";
+import { ExternalLink } from "lucide-react";
 
 interface CaseDetailPageProps {
   readonly params: Promise<{ id: string }>;
@@ -38,20 +39,23 @@ export default async function CaseDetailPage({
       <Card className="p-6">
         <div className="mb-4 flex items-center justify-between gap-4">
           <div>
-            <p className="text-xs text-[var(--text-tertiary)]">
+            <p className="text-xs text-(--text-tertiary)">
               {data.bankName} · {data.bankCode}
             </p>
             <p className="font-mono text-2xl">{data.bankIdentifier}</p>
           </div>
           <StatusBadge status={data.status} />
         </div>
-        <p className="mb-4 text-sm text-[var(--text-secondary)]">
+        <p className="mb-4 text-sm text-(--text-secondary)">
           {data.refinedDescription ?? data.originalDescription}
         </p>
-        <div className="grid gap-2 text-sm text-[var(--text-secondary)]">
+        <div className="grid gap-2 text-sm text-(--text-secondary)">
           <p>
             Số tiền liên quan:{" "}
-            <span className="font-semibold text-danger">
+            <span
+              className="font-semibold text-danger"
+              aria-label={`${(data.amount ?? 0).toLocaleString("vi-VN")} đồng Việt Nam`}
+            >
               {formatMoneyVnd(data.amount)}
             </span>
           </p>
@@ -70,12 +74,14 @@ export default async function CaseDetailPage({
                     href={item.viewUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-neon underline"
+                    className="inline-flex items-center gap-1.5 text-neon underline"
                   >
                     {item.fileName}
+                    <ExternalLink className="size-3.5" aria-hidden="true" />
+                    <span className="sr-only">(mở trong tab mới)</span>
                   </a>
                 ) : (
-                  <span className="text-[var(--text-tertiary)]">
+                  <span className="text-(--text-tertiary)">
                     {item.fileName}
                   </span>
                 )}

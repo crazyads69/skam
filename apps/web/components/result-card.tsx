@@ -2,7 +2,7 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
 import type { CaseStatus } from "@skam/shared/types";
-import { Calendar, Users } from "lucide-react";
+import { Calendar, Eye } from "lucide-react";
 import type { ReactElement } from "react";
 
 interface ResultCardProps {
@@ -24,22 +24,25 @@ export function ResultCard({
 }: ResultCardProps): ReactElement {
   const borderColor =
     status === "APPROVED"
-      ? "border-[var(--status-danger)]/40"
+      ? "border-danger/40"
       : status === "REJECTED"
-        ? "border-[var(--status-safe)]/40"
-        : "border-[var(--status-pending)]/40";
+        ? "border-safe/40"
+        : "border-pending/40";
 
   return (
-    <GlassCard className={cn("p-6", borderColor)}>
+    <GlassCard className={cn("hover-neon-border p-6", borderColor)}>
       {/* Header */}
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <p className="text-sm text-[var(--text-tertiary)]">{bankName}</p>
-          <p className="text-xl font-mono font-semibold tracking-wider">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm text-(--text-tertiary)">{bankName}</p>
+          <p className="truncate font-mono text-xl font-semibold tracking-wider">
             {accountNumber}
           </p>
           {scammerName ? (
-            <p className="text-sm text-[var(--text-secondary)]">
+            <p
+              className="truncate text-sm text-(--text-secondary)"
+              title={scammerName}
+            >
               {scammerName}
             </p>
           ) : null}
@@ -48,14 +51,14 @@ export function ResultCard({
       </div>
 
       {/* Stats row */}
-      <div className="flex gap-6 text-sm text-[var(--text-secondary)]">
+      <div className="flex gap-5 text-sm text-(--text-secondary)">
         <span className="inline-flex items-center gap-1.5">
-          <Users className="size-4" />
+          <Eye className="size-4" aria-hidden="true" />
           {reportCount} lượt xem
         </span>
         {lastReported ? (
           <span className="inline-flex items-center gap-1.5">
-            <Calendar className="size-4" />
+            <Calendar className="size-4" aria-hidden="true" />
             {lastReported}
           </span>
         ) : null}

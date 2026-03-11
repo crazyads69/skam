@@ -17,6 +17,7 @@ import {
 } from "@/components/report/report-form.schema";
 import { SocialLinksEditor } from "@/components/report/social-links-editor";
 import { ReportFormSummary } from "@/components/report/report-form-summary";
+import { StepIndicator } from "@/components/report/step-indicator";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
 import { createCase, getBanks, presignUpload } from "@/lib/api";
@@ -55,6 +56,7 @@ export default function ReportPage(): ReactElement {
   const [turnstileToken, setTurnstileToken] = useState<string>("");
   const methods = useForm<ReportFormValues>({
     resolver: zodResolver(reportSchema),
+    mode: "onBlur",
     defaultValues: {
       bankCode: "VCB",
       socialLinks: [],
@@ -206,11 +208,21 @@ export default function ReportPage(): ReactElement {
         <h1 className="mb-2 text-2xl font-semibold">
           Báo cáo tài khoản lừa đảo
         </h1>
-        <p className="mb-6 text-sm text-[var(--text-secondary)]">
+        <p className="mb-6 text-sm text-(--text-secondary)">
           Thông tin sẽ được kiểm duyệt trước khi công khai.
         </p>
         <FormProvider {...methods}>
           <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
+            <StepIndicator
+              steps={["Tài khoản", "Chi tiết", "Bằng chứng"]}
+              currentStep={
+                formState.dirtyFields.originalDescription
+                  ? 3
+                  : formState.dirtyFields.bankIdentifier
+                    ? 2
+                    : 1
+              }
+            />
             <BankAccountFields banks={banks} />
             <CaseDetailsFields />
             <SocialLinksEditor />

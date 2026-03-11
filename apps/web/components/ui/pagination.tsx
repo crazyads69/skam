@@ -17,21 +17,24 @@ export function Pagination({
 }: PaginationProps): ReactElement | null {
   if (totalPages <= 1) return null;
   return (
-    <div className="flex items-center justify-center gap-2 pt-4">
+    <nav
+      aria-label="Phân trang"
+      className="flex items-center justify-center gap-2 pt-4"
+    >
       {page > 1 ? (
-        <Link href={previousHref}>
+        <Link href={previousHref} aria-label={`Trang trước, trang ${page - 1}`}>
           <Button variant="neon-outline">Trang trước</Button>
         </Link>
       ) : null}
-      <span className="text-sm text-[var(--text-secondary)]">
+      <span className="text-sm text-(--text-secondary)" aria-current="page">
         Trang {page.toLocaleString("vi-VN")} /{" "}
         {totalPages.toLocaleString("vi-VN")}
       </span>
       {page < totalPages ? (
-        <Link href={nextHref}>
+        <Link href={nextHref} aria-label={`Trang sau, trang ${page + 1}`}>
           <Button variant="neon-outline">Trang sau</Button>
         </Link>
       ) : null}
-    </div>
+    </nav>
   );
 }

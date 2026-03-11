@@ -25,15 +25,35 @@ export function BankAccountFields({
       <p className="text-sm font-medium text-foreground">
         Bước 1: Thông tin tài khoản
       </p>
-      <Input placeholder="Số tài khoản" {...register("bankIdentifier")} />
-      {errors.bankIdentifier ? (
-        <p className="text-xs text-danger">{errors.bankIdentifier.message}</p>
-      ) : null}
+      <div className="grid gap-1.5">
+        <label htmlFor="bankIdentifier" className="text-sm font-medium">
+          Số tài khoản <span className="text-danger">*</span>
+        </label>
+        <Input
+          id="bankIdentifier"
+          placeholder="Số tài khoản"
+          error={!!errors.bankIdentifier}
+          {...register("bankIdentifier")}
+        />
+        {errors.bankIdentifier ? (
+          <p className="text-xs text-danger">{errors.bankIdentifier.message}</p>
+        ) : null}
+      </div>
 
-      <Input placeholder="Tên chủ tài khoản" {...register("bankName")} />
-      {errors.bankName ? (
-        <p className="text-xs text-danger">{errors.bankName.message}</p>
-      ) : null}
+      <div className="grid gap-1.5">
+        <label htmlFor="bankName" className="text-sm font-medium">
+          Tên chủ tài khoản <span className="text-danger">*</span>
+        </label>
+        <Input
+          id="bankName"
+          placeholder="Tên chủ tài khoản"
+          error={!!errors.bankName}
+          {...register("bankName")}
+        />
+        {errors.bankName ? (
+          <p className="text-xs text-danger">{errors.bankName.message}</p>
+        ) : null}
+      </div>
 
       <input type="hidden" {...register("bankCode")} />
       <BankSelector

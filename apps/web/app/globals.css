@@ -15,7 +15,7 @@
   --text-primary: #f2f2f2;
   --text-secondary: #c2f0d9;
   --text-tertiary: #9fdfbf;
-  --text-disabled: #808080;
+  --text-disabled: #9ca3af;
   --text-inverse: #000000;
   --border-default: hsl(0 0% 100% / 0.08);
   --border-hover: hsl(0 0% 100% / 0.15);
@@ -223,6 +223,45 @@ a {
   }
 }
 
+@keyframes shield-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes glow-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes count-up {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
 /* Animation Utilities */
 .animate-scan {
   position: relative;
@@ -245,6 +284,51 @@ a {
 
 .animate-neon-pulse {
   animation: neon-pulse 2s ease-in-out infinite;
+}
+
+.animate-shield-float {
+  animation: shield-float 4s ease-in-out infinite;
+}
+
+.animate-count-up {
+  animation: count-up var(--duration-slow) var(--ease-out) both;
+}
+
+.glow-ring {
+  position: relative;
+}
+
+.glow-ring::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 0deg,
+    transparent,
+    var(--neon-green),
+    transparent,
+    transparent,
+    var(--neon-green),
+    transparent
+  );
+  animation: glow-rotate 6s linear infinite;
+  opacity: 0.3;
+  z-index: -1;
+}
+
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    var(--text-primary) 0%,
+    var(--neon-green-light) 50%,
+    var(--text-primary) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 4s linear infinite;
 }
 
 .animate-fade-in-up {

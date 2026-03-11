@@ -5,6 +5,7 @@ import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ExternalLink } from "lucide-react";
 import {
   approveAdminCase,
   getAdminEvidenceViewUrl,
@@ -81,11 +82,11 @@ export default async function AdminCaseDetailPage({
   return (
     <section className="grid gap-4">
       <GlassCard className="p-5">
-        <p className="text-xs text-[var(--text-tertiary)]">
+        <p className="text-xs text-(--text-tertiary)">
           {data.bankName} · {data.bankCode}
         </p>
         <h1 className="mt-1 font-mono text-xl">{data.bankIdentifier}</h1>
-        <p className="mt-3 text-sm text-[var(--text-secondary)]">
+        <p className="mt-3 text-sm text-(--text-secondary)">
           {data.originalDescription}
         </p>
       </GlassCard>
@@ -111,7 +112,7 @@ export default async function AdminCaseDetailPage({
         <h2 className="mb-3 text-sm font-medium">Bằng chứng</h2>
         <ul className="grid gap-2 text-sm">
           {evidenceUrls.length === 0 ? (
-            <li className="text-[var(--text-tertiary)]">Chưa có bằng chứng</li>
+            <li className="text-(--text-tertiary)">Chưa có bằng chứng</li>
           ) : null}
           {evidenceUrls.map((item) => (
             <li key={item.id}>
@@ -120,14 +121,14 @@ export default async function AdminCaseDetailPage({
                   href={item.viewUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-neon underline"
+                  className="inline-flex items-center gap-1 text-neon underline"
                 >
                   {item.fileName}
+                  <ExternalLink className="size-3" aria-hidden="true" />
+                  <span className="sr-only">(mở trong tab mới)</span>
                 </a>
               ) : (
-                <span className="text-[var(--text-tertiary)]">
-                  {item.fileName}
-                </span>
+                <span className="text-(--text-tertiary)">{item.fileName}</span>
               )}
             </li>
           ))}
@@ -147,7 +148,15 @@ export default async function AdminCaseDetailPage({
         </GlassCard>
         <GlassCard className="p-5">
           <form action={rejectAction} className="grid gap-3">
-            <Input name="reason" placeholder="Lý do từ chối" required />
+            <label htmlFor="reason" className="text-sm font-medium">
+              Lý do từ chối
+            </label>
+            <Input
+              id="reason"
+              name="reason"
+              placeholder="Lý do từ chối"
+              required
+            />
             <FormSubmitButton
               label="Từ chối vụ việc"
               pendingLabel="Đang từ chối..."

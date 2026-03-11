@@ -1,1 +1,1 @@
-export { escapeHtml, normalizeUserText } from "@skam/shared/src/utils/sanitize";
+export { escapeHtml, normalizeUserText } from "@skam/shared/utils";

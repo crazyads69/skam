@@ -1,11 +1,19 @@
+"use client";
+
 import type { ReactElement } from "react";
 import Link from "next/link";
-import { Shield } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Search, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export function NavBar(): ReactElement {
+  const pathname = usePathname();
+  const isReport = pathname === "/report";
+  const isSearch = pathname === "/search";
+
   return (
-    <header className="border-b border-border bg-[var(--glass-bg)] backdrop-blur-[var(--glass-blur)]">
+    <header className="border-b border-border bg-(--glass-bg) backdrop-blur-(--glass-blur)">
       <div className="skam-container flex h-16 items-center justify-between">
         <Link
           href="/"
@@ -16,8 +24,33 @@ export function NavBar(): ReactElement {
           SKAM
         </Link>
         <nav className="flex items-center gap-2" aria-label="Menu chính">
-          <Link href="/report" aria-label="Báo cáo lừa đảo">
-            <Button variant="neon-outline" size="default">
+          <Link
+            href="/search"
+            aria-label="Tra cứu"
+            aria-current={isSearch ? "page" : undefined}
+          >
+            <Button
+              variant="ghost"
+              size="default"
+              className={cn(
+                "gap-1.5 text-(--text-secondary) hover:text-foreground",
+                isSearch && "text-neon bg-neon-ghost",
+              )}
+            >
+              <Search className="size-4" aria-hidden="true" />
+              Tra cứu
+            </Button>
+          </Link>
+          <Link
+            href="/report"
+            aria-label="Báo cáo lừa đảo"
+            aria-current={isReport ? "page" : undefined}
+          >
+            <Button
+              variant="neon-outline"
+              size="default"
+              className={cn(isReport && "bg-neon-ghost shadow-(--shadow-neon)")}
+            >
               Báo cáo
             </Button>
           </Link>
