@@ -67,7 +67,6 @@ export default function SearchFilters({
         label="Lọc"
         pendingLabel="Đang lọc..."
         variant="neon-outline"
-        className="h-11"
       />
     </form>
   );

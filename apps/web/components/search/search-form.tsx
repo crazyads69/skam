@@ -26,14 +26,20 @@ export default function SearchForm(): ReactElement {
             "h-14 pl-12 pr-4 text-lg font-mono",
             "bg-surface-1 border-(--border-default)",
             "placeholder:text-(--text-disabled)",
-            "focus:border-neon focus:ring-2 focus:ring-(--neon-green)/20",
+            "focus:border-neon focus:ring-2 focus:ring-inset focus:ring-(--neon-green)/20",
             "focus:shadow-(--shadow-neon)",
             "rounded-xl transition-all duration-200",
           )}
           required
         />
       </div>
-      <Button type="submit" variant="neon" size="xl" disabled={isSubmitting}>
+      <Button
+        type="submit"
+        variant="neon"
+        size="xl"
+        className="h-14 rounded-xl"
+        disabled={isSubmitting}
+      >
         {isSubmitting ? <Loader2 className="size-5 animate-spin" /> : "Tra cứu"}
       </Button>
     </form>
