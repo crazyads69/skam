@@ -2,11 +2,13 @@ import {
   BadRequestException,
   HttpException,
   Injectable,
+  Logger,
   NotFoundException,
 } from "@nestjs/common";
 import type { PaginatedResponse, ScamCase } from "@skam/shared/src/types";
 import { CaseStatus, SocialPlatform } from "@skam/shared/src/types";
 import { createHash } from "node:crypto";
+import { CASE_NOT_FOUND } from "../common/error-messages";
 import { CacheService } from "../cache/cache.service";
 import { mapScamCase } from "../common/case-mapper";
 import { PrismaService } from "../database/prisma.service";
@@ -20,6 +22,7 @@ type SearchResult = PaginatedResponse<ScamCase>;
 
 @Injectable()
 export class CasesService {
+  private readonly logger = new Logger(CasesService.name);
   private readonly hashSalt: string;
 
   public constructor(
@@ -41,10 +44,12 @@ export class CasesService {
     payload: CreateCaseDto,
     requesterIp?: string,
   ): Promise<ScamCase> {
+    const DAILY_CASE_LIMIT = 5;
+    const ONE_DAY_SECONDS = 86_400;
     const isAllowed: boolean = await this.cache.fixedWindowLimit(
       `ratelimit:cases:${requesterIp ?? "unknown"}`,
-      5,
-      60 * 60 * 24,
+      DAILY_CASE_LIMIT,
+      ONE_DAY_SECONDS,
     );
     if (!isAllowed)
       throw new HttpException("Bạn đã gửi quá số lần cho phép hôm nay", 429);
@@ -103,7 +108,13 @@ export class CasesService {
       },
     });
     const result: ScamCase = mapScamCase(created);
-    this.telegramNotifier.notifyNewCase(result).catch(() => {});
+    this.telegramNotifier.notifyNewCase(result).catch((error: unknown) => {
+      const reason: string =
+        error instanceof Error ? error.message : String(error);
+      this.logger.debug(
+        `telegram_notify_fire_and_forget_error reason=${reason}`,
+      );
+    });
     return result;
   }
 
@@ -117,77 +128,53 @@ export class CasesService {
     const normalizedBankCode: string | null = query.bankCode
       ? query.bankCode.toUpperCase().trim()
       : null;
+    // SAFETY: searchPattern is passed via Prisma's tagged template literal ($queryRaw`...`)
+    // which parameterizes values automatically. Do NOT refactor to $queryRawUnsafe.
     const [idRows, countRows] = normalizedBankCode
       ? await Promise.all([
           this.prisma.$queryRaw<Array<{ id: string }>>`
-            SELECT id
-            FROM "ScamCase"
+            SELECT id FROM "ScamCase"
             WHERE status = ${CaseStatus.APPROVED}
               AND bankCode = ${normalizedBankCode}
-              AND (
-                LOWER(bankIdentifier) LIKE ${searchPattern} ESCAPE '\\'
-                OR LOWER(COALESCE(scammerName, '')) LIKE ${searchPattern} ESCAPE '\\'
-              )
-            ORDER BY createdAt DESC
-            LIMIT ${pageSize}
-            OFFSET ${skip}
+              AND (LOWER(bankIdentifier) LIKE ${searchPattern} ESCAPE '\\'
+                   OR LOWER(COALESCE(scammerName, '')) LIKE ${searchPattern} ESCAPE '\\')
+            ORDER BY createdAt DESC LIMIT ${pageSize} OFFSET ${skip}
           `,
           this.prisma.$queryRaw<Array<{ total: number }>>`
-            SELECT COUNT(*) as total
-            FROM "ScamCase"
+            SELECT COUNT(*) as total FROM "ScamCase"
             WHERE status = ${CaseStatus.APPROVED}
               AND bankCode = ${normalizedBankCode}
-              AND (
-                LOWER(bankIdentifier) LIKE ${searchPattern} ESCAPE '\\'
-                OR LOWER(COALESCE(scammerName, '')) LIKE ${searchPattern} ESCAPE '\\'
-              )
+              AND (LOWER(bankIdentifier) LIKE ${searchPattern} ESCAPE '\\'
+                   OR LOWER(COALESCE(scammerName, '')) LIKE ${searchPattern} ESCAPE '\\')
           `,
         ])
       : await Promise.all([
           this.prisma.$queryRaw<Array<{ id: string }>>`
-            SELECT id
-            FROM "ScamCase"
+            SELECT id FROM "ScamCase"
             WHERE status = ${CaseStatus.APPROVED}
-              AND (
-                LOWER(bankIdentifier) LIKE ${searchPattern} ESCAPE '\\'
-                OR LOWER(COALESCE(scammerName, '')) LIKE ${searchPattern} ESCAPE '\\'
-              )
-            ORDER BY createdAt DESC
-            LIMIT ${pageSize}
-            OFFSET ${skip}
+              AND (LOWER(bankIdentifier) LIKE ${searchPattern} ESCAPE '\\'
+                   OR LOWER(COALESCE(scammerName, '')) LIKE ${searchPattern} ESCAPE '\\')
+            ORDER BY createdAt DESC LIMIT ${pageSize} OFFSET ${skip}
           `,
           this.prisma.$queryRaw<Array<{ total: number }>>`
-            SELECT COUNT(*) as total
-            FROM "ScamCase"
+            SELECT COUNT(*) as total FROM "ScamCase"
             WHERE status = ${CaseStatus.APPROVED}
-              AND (
-                LOWER(bankIdentifier) LIKE ${searchPattern} ESCAPE '\\'
-                OR LOWER(COALESCE(scammerName, '')) LIKE ${searchPattern} ESCAPE '\\'
-              )
+              AND (LOWER(bankIdentifier) LIKE ${searchPattern} ESCAPE '\\'
+                   OR LOWER(COALESCE(scammerName, '')) LIKE ${searchPattern} ESCAPE '\\')
           `,
         ]);
     const ids: string[] = idRows.map((row) => row.id);
-    const orderedIds: Map<string, number> = new Map(
-      ids.map((id, index) => [id, index]),
-    );
     const items = ids.length
       ? await this.prisma.scamCase.findMany({
           where: { id: { in: ids } },
-          include: {
-            evidenceFiles: true,
-            socialLinks: true,
-          },
+          include: { evidenceFiles: true, socialLinks: true },
+          orderBy: { createdAt: "desc" },
         })
       : [];
-    const sortedItems = items.sort(
-      (a, b) =>
-        (orderedIds.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
-        (orderedIds.get(b.id) ?? Number.MAX_SAFE_INTEGER),
-    );
     const total: number = Number(countRows[0]?.total ?? 0);
     return {
       success: true,
-      data: sortedItems.map((item) => mapScamCase(item)),
+      data: items.map((item) => mapScamCase(item)),
       page,
       pageSize,
       total,
@@ -229,7 +216,7 @@ export class CasesService {
     const found = await this.prisma.scamCase.findFirst({
       where: { id, status: CaseStatus.APPROVED },
     });
-    if (!found) throw new NotFoundException("Không tìm thấy vụ việc");
+    if (!found) throw new NotFoundException(CASE_NOT_FOUND);
     const viewWindowSeconds: number = 60 * 60;
     const viewFingerprint: string = requester
       ? this.hashValue(requester)
@@ -256,7 +243,7 @@ export class CasesService {
             socialLinks: true,
           },
         });
-    if (!result) throw new NotFoundException("Không tìm thấy vụ việc");
+    if (!result) throw new NotFoundException(CASE_NOT_FOUND);
     return mapScamCase(result);
   }
 

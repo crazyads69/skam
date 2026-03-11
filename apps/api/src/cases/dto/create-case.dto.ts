@@ -73,6 +73,7 @@ export class CreateCaseDto {
   @IsString()
   @MinLength(2)
   @MaxLength(10)
+  @Matches(/^[A-Za-z0-9]+$/, { message: "Mã ngân hàng không hợp lệ" })
   public bankCode!: string;
 
   @IsOptional()

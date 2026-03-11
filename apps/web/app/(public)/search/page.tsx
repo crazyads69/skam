@@ -1,7 +1,7 @@
 import { ResultCard } from "@/components/result-card";
 import SearchFilters from "@/components/search/search-filters";
-import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
+import { Pagination } from "@/components/ui/pagination";
 import { getBanks, searchCases } from "@/lib/api";
 import { normalizeUserText } from "@/lib/sanitize";
 import { CaseStatus } from "@skam/shared/types";
@@ -23,6 +23,8 @@ interface SearchPageProps {
   }>;
 }
 
+const SEARCH_PAGE_SIZE = 10;
+
 export default async function SearchPage({
   searchParams,
 }: SearchPageProps): Promise<ReactElement> {
@@ -31,7 +33,7 @@ export default async function SearchPage({
   const bankCode: string | undefined = params.bankCode?.trim() || undefined;
   const page: number = Math.max(1, Number(params.page ?? "1") || 1);
   const payload = q
-    ? await searchCases({ q, bankCode, page, pageSize: 10 })
+    ? await searchCases({ q, bankCode, page, pageSize: SEARCH_PAGE_SIZE })
     : null;
   const banks = await getBanks().catch(() => null);
   const totalPages: number = payload?.totalPages ?? 1;
@@ -82,35 +84,13 @@ export default async function SearchPage({
           </Link>
         ))}
       </div>
-      {q && payload && payload.totalPages > 1 ? (
-        <div className="mt-8 flex items-center justify-between gap-3">
-          <Link href={previousHref} passHref legacyBehavior>
-            <Button
-              variant="neon-outline"
-              disabled={page <= 1}
-              className={page <= 1 ? "pointer-events-none opacity-50" : ""}
-            >
-              Trang trước
-            </Button>
-          </Link>
-          <p className="text-sm text-[var(--text-secondary)]">
-            Trang {page.toLocaleString("vi-VN")} /{" "}
-            {payload.totalPages.toLocaleString("vi-VN")}
-          </p>
-          <Link href={nextHref} passHref legacyBehavior>
-            <Button
-              variant="neon-outline"
-              disabled={page >= payload.totalPages}
-              className={
-                page >= payload.totalPages
-                  ? "pointer-events-none opacity-50"
-                  : ""
-              }
-            >
-              Trang sau
-            </Button>
-          </Link>
-        </div>
+      {q ? (
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          previousHref={previousHref}
+          nextHref={nextHref}
+        />
       ) : null}
     </main>
   );

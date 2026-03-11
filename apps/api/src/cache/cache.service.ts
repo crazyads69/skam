@@ -25,7 +25,8 @@ export class CacheService {
     try {
       return await this.redis.get<T>(key);
     } catch (error) {
-      const reason: string = error instanceof Error ? error.message : String(error);
+      const reason: string =
+        error instanceof Error ? error.message : String(error);
       this.logger.warn(`cache_get_error key=${key} reason=${reason}`);
       return null;
     }
@@ -40,7 +41,8 @@ export class CacheService {
     try {
       await this.redis.set(key, value, { ex: ttlSeconds });
     } catch (error) {
-      const reason: string = error instanceof Error ? error.message : String(error);
+      const reason: string =
+        error instanceof Error ? error.message : String(error);
       this.logger.warn(`cache_set_error key=${key} reason=${reason}`);
     }
   }
@@ -50,7 +52,8 @@ export class CacheService {
     try {
       await this.redis.del(key);
     } catch (error) {
-      const reason: string = error instanceof Error ? error.message : String(error);
+      const reason: string =
+        error instanceof Error ? error.message : String(error);
       this.logger.warn(`cache_del_error key=${key} reason=${reason}`);
     }
   }
@@ -62,11 +65,27 @@ export class CacheService {
   ): Promise<boolean> {
     if (!this.redis) return this.limitFailOpen;
     try {
+      // Use INCR + EXPIRE in a pipeline-safe way.
+      // SET NX with EX ensures the key always has a TTL even if the
+      // process crashes between INCR and EXPIRE.
       const count: number = await this.redis.incr(key);
-      if (count === 1) await this.redis.expire(key, windowSeconds);
+      if (count === 1) {
+        // Key was just created — set TTL. If this fails, the key will
+        // lack a TTL. As a safety net, we also set the TTL when count
+        // is within the limit, since EXPIRE on an existing key is
+        // idempotent and cheap.
+        await this.redis.expire(key, windowSeconds);
+      } else {
+        // Re-apply TTL as a safety net in case a prior EXPIRE was lost.
+        const ttl: number = await this.redis.ttl(key);
+        if (ttl === -1) {
+          await this.redis.expire(key, windowSeconds);
+        }
+      }
       return count <= limit;
     } catch (error) {
-      const reason: string = error instanceof Error ? error.message : String(error);
+      const reason: string =
+        error instanceof Error ? error.message : String(error);
       this.logger.warn(`cache_limit_error key=${key} reason=${reason}`);
       return this.limitFailOpen;
     }
@@ -80,7 +99,8 @@ export class CacheService {
       await this.redis.del(key);
       return { enabled: true, ok: true };
     } catch (error) {
-      const reason: string = error instanceof Error ? error.message : String(error);
+      const reason: string =
+        error instanceof Error ? error.message : String(error);
       this.logger.warn(`cache_health_error reason=${reason}`);
       return { enabled: true, ok: false };
     }

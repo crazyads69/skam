@@ -2,7 +2,8 @@ import type { ReactElement } from "react";
 import Link from "next/link";
 import { CaseStatus } from "@skam/shared/types";
 import { getAdminAnalytics, listAdminCases } from "@/lib/api";
-import { getAdminTokenFromCookie } from "@/lib/admin-auth";
+import { requireAdminToken } from "@/lib/admin-auth";
+import { Pagination } from "@/components/ui/pagination";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -17,18 +18,14 @@ export default async function AdminDashboardPage({
   const params = await searchParams;
   const currentPage = Math.max(1, Number(params.page ?? "1") || 1);
   const pageSize = 20;
-  const token = await getAdminTokenFromCookie();
-  const pending = token
-    ? await listAdminCases(
-        token,
-        CaseStatus.PENDING,
-        currentPage,
-        pageSize,
-      ).catch(() => null)
-    : null;
-  const analytics = token
-    ? await getAdminAnalytics(token).catch(() => null)
-    : null;
+  const token = await requireAdminToken();
+  const pending = await listAdminCases(
+    token,
+    CaseStatus.PENDING,
+    currentPage,
+    pageSize,
+  ).catch(() => null);
+  const analytics = await getAdminAnalytics(token).catch(() => null);
   const breakdown = analytics?.data?.statusBreakdown ?? {};
   const totalPages = pending?.totalPages ?? 1;
   return (
@@ -91,27 +88,12 @@ export default async function AdminDashboardPage({
           </Card>
         ))}
       </div>
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-4">
-          {currentPage > 1 && (
-            <Link href={`/admin?page=${currentPage - 1}`}>
-              <Button variant="neon-outline" size="default">
-                ← Trang trước
-              </Button>
-            </Link>
-          )}
-          <span className="text-sm text-[var(--text-secondary)]">
-            Trang {currentPage} / {totalPages}
-          </span>
-          {currentPage < totalPages && (
-            <Link href={`/admin?page=${currentPage + 1}`}>
-              <Button variant="neon-outline" size="default">
-                Trang sau →
-              </Button>
-            </Link>
-          )}
-        </div>
-      )}
+      <Pagination
+        page={currentPage}
+        totalPages={totalPages}
+        previousHref={`/admin?page=${currentPage - 1}`}
+        nextHref={`/admin?page=${currentPage + 1}`}
+      />
     </section>
   );
 }

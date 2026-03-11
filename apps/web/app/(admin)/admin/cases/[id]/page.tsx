@@ -12,7 +12,8 @@ import {
   rejectAdminCase,
   refineAdminCase,
 } from "@/lib/api";
-import { getAdminTokenFromCookie } from "@/lib/admin-auth";
+import { requireAdminToken } from "@/lib/admin-auth";
+import { resolveEvidenceUrls } from "@/lib/evidence-urls";
 
 interface AdminCaseDetailPageProps {
   readonly params: Promise<{ id: string }>;
@@ -21,56 +22,58 @@ interface AdminCaseDetailPageProps {
 export default async function AdminCaseDetailPage({
   params,
 }: AdminCaseDetailPageProps): Promise<ReactElement> {
-  const token = await getAdminTokenFromCookie();
-  if (!token) redirect("/admin/login");
+  const token = await requireAdminToken();
   const { id } = await params;
   const response = await getAdminCase(token, id).catch(() => null);
   const data = response?.data;
   if (!response?.success || !data) notFound();
-  const evidenceUrls = await Promise.all(
-    (data.evidenceFiles ?? []).map(async (item) => {
-      const urlResponse = await getAdminEvidenceViewUrl(
-        token,
-        item.fileKey,
-      ).catch(() => null);
-      return {
-        id: item.id,
-        fileName: item.fileName ?? item.fileKey,
-        viewUrl: urlResponse?.data?.viewUrl ?? null,
-      };
-    }),
+  const evidenceUrls = await resolveEvidenceUrls(
+    data.evidenceFiles ?? [],
+    (f) => getAdminEvidenceViewUrl(token, f.fileKey),
   );
 
   async function refineAction(formData: FormData): Promise<void> {
     "use server";
-    const token = await getAdminTokenFromCookie();
-    if (!token) redirect("/admin/login");
+    const token = await requireAdminToken();
     const refinedDescription = String(formData.get("refinedDescription") ?? "");
-    await refineAdminCase(token, id, refinedDescription);
+    try {
+      await refineAdminCase(token, id, refinedDescription);
+    } catch {
+      throw new Error("Không thể lưu nội dung tinh chỉnh. Vui lòng thử lại.");
+    }
     revalidatePath(`/admin/cases/${id}`);
   }
 
   async function approveAction(): Promise<void> {
     "use server";
-    const token = await getAdminTokenFromCookie();
-    if (!token) redirect("/admin/login");
-    const latestCaseResponse = await getAdminCase(token, id).catch(() => null);
-    const refinedDescription =
-      latestCaseResponse?.success && latestCaseResponse.data?.refinedDescription
-        ? latestCaseResponse.data.refinedDescription.trim()
-        : undefined;
-    await approveAdminCase(token, id, refinedDescription || undefined);
+    const token = await requireAdminToken();
+    try {
+      const latestCaseResponse = await getAdminCase(token, id).catch(
+        () => null,
+      );
+      const refinedDescription =
+        latestCaseResponse?.success &&
+        latestCaseResponse.data?.refinedDescription
+          ? latestCaseResponse.data.refinedDescription.trim()
+          : undefined;
+      await approveAdminCase(token, id, refinedDescription || undefined);
+    } catch {
+      throw new Error("Không thể duyệt vụ việc. Vui lòng thử lại.");
+    }
     revalidatePath("/admin");
     redirect("/admin");
   }
 
   async function rejectAction(formData: FormData): Promise<void> {
     "use server";
-    const token = await getAdminTokenFromCookie();
-    if (!token) redirect("/admin/login");
+    const token = await requireAdminToken();
     const reason = String(formData.get("reason") ?? "").trim();
     if (!reason) return;
-    await rejectAdminCase(token, id, reason);
+    try {
+      await rejectAdminCase(token, id, reason);
+    } catch {
+      throw new Error("Không thể từ chối vụ việc. Vui lòng thử lại.");
+    }
     revalidatePath("/admin");
     redirect("/admin");
   }

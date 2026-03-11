@@ -60,14 +60,15 @@ export class StorageController {
           ? request.headers["x-turnstile-token"][0]
           : (request.headers["x-turnstile-token"] ?? ""),
       ).trim();
-      if (turnstileToken) {
-        const isValid: boolean = await this.turnstileService.verify(
-          turnstileToken,
-          request.ip,
-        );
-        if (!isValid) {
-          throw new HttpException("Turnstile token không hợp lệ", 400);
-        }
+      if (!turnstileToken) {
+        throw new HttpException("Thiếu Turnstile token", 400);
+      }
+      const isValid: boolean = await this.turnstileService.verify(
+        turnstileToken,
+        request.ip,
+      );
+      if (!isValid) {
+        throw new HttpException("Turnstile token không hợp lệ", 400);
       }
     }
     const data = await this.storageService.presignUpload(payload);

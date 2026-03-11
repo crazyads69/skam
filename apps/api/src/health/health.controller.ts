@@ -7,7 +7,10 @@ import {
 } from "@nestjs/common";
 import { CacheService } from "../cache/cache.service";
 import { PrismaService } from "../database/prisma.service";
-import { resolveRequestIdentifier } from "../common/request-identifier";
+import {
+  resolveRequestIdentifier,
+  type RequestLike,
+} from "../common/request-identifier";
 
 interface HealthResponse {
   status: "ok";
@@ -30,13 +33,7 @@ export class HealthController {
   ) {}
 
   @Get()
-  public async getHealth(
-    @Req()
-    request: {
-      ip?: string;
-      headers: Record<string, string | string[] | undefined>;
-    },
-  ): Promise<HealthResponse> {
+  public async getHealth(@Req() request: RequestLike): Promise<HealthResponse> {
     const identifier: string = resolveRequestIdentifier(request);
     const allowed: boolean = await this.cache.fixedWindowLimit(
       `ratelimit:health:${identifier}`,
@@ -54,36 +51,29 @@ export class HealthController {
   @Get("ready")
   public async getReady(): Promise<ReadyResponse> {
     const cache = await this.cache.healthcheck();
-    let databaseOk: boolean = true;
+    let databaseOk = true;
     try {
       await this.prisma.$queryRaw`SELECT 1`;
     } catch {
       databaseOk = false;
     }
-    const cacheStatus: "ok" | "error" | "disabled" = cache.enabled
-      ? cache.ok
+    const cacheStatus: "ok" | "error" | "disabled" = !cache.enabled
+      ? "disabled"
+      : cache.ok
         ? "ok"
-        : "error"
-      : "disabled";
-    if (!databaseOk || (cache.enabled && !cache.ok)) {
-      throw new ServiceUnavailableException({
-        status: "error",
-        service: "@skam/api",
-        timestamp: new Date().toISOString(),
-        checks: {
-          database: databaseOk ? "ok" : "error",
-          cache: cacheStatus,
-        },
-      });
-    }
-    return {
-      status: "ok",
+        : "error";
+    const checks = {
+      database: (databaseOk ? "ok" : "error") as "ok" | "error",
+      cache: cacheStatus,
+    };
+    const base = {
       service: "@skam/api",
       timestamp: new Date().toISOString(),
-      checks: {
-        database: "ok",
-        cache: cacheStatus,
-      },
+      checks,
     };
+    if (!databaseOk || (cache.enabled && !cache.ok)) {
+      throw new ServiceUnavailableException({ status: "error", ...base });
+    }
+    return { status: "ok", ...base };
   }
 }

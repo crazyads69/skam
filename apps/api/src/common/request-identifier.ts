@@ -3,6 +3,18 @@ export interface RequestLike {
   headers: Record<string, string | string[] | undefined>;
 }
 
+/**
+ * Resolves client identifier for rate limiting.
+ *
+ * IMPORTANT: Only set TRUST_PROXY_HEADERS=true when deployed behind a
+ * trusted proxy (Vercel, Cloudflare). An untrusted proxy allows
+ * attackers to spoof the header and bypass per-IP rate limits.
+ *
+ * Supported proxy headers (set via TRUSTED_PROXY_HEADER env):
+ *   - "x-vercel-forwarded-for"  (Vercel — default)
+ *   - "cf-connecting-ip"        (Cloudflare)
+ *   - "x-real-ip"               (generic reverse proxies)
+ */
 export function resolveRequestIdentifier(request: RequestLike): string {
   const fallback: string = request.ip ?? "unknown";
   if ((process.env.TRUST_PROXY_HEADERS ?? "false") !== "true") return fallback;

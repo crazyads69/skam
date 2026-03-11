@@ -15,15 +15,15 @@ function resolveAllowedOrigins(): string[] {
     .map((item) => item.trim())
     .filter(Boolean);
   const fromWeb = String(process.env.NEXTAUTH_URL ?? "").trim();
-  return Array.from(new Set([...fromCors, fromWeb].filter(Boolean))).map(
-    (item) => {
+  return Array.from(new Set([...fromCors, fromWeb].filter(Boolean)))
+    .map((item) => {
       try {
         return new URL(item).origin;
       } catch {
         return "";
       }
-    },
-  ).filter(Boolean);
+    })
+    .filter(Boolean);
 }
 
 function resolveOriginFromReferer(referer: string): string {
@@ -35,6 +35,13 @@ function resolveOriginFromReferer(referer: string): string {
   }
 }
 
+/**
+ * Origin validation for public write endpoints (createCase, presign upload).
+ *
+ * CSRF note: Admin endpoints use JWT tokens from the Authorization header
+ * (not cookies), so they are NOT vulnerable to CSRF and do not need
+ * origin validation. This is an intentional architectural decision.
+ */
 export function assertAllowedWriteOrigin(
   headers: Record<string, string | string[] | undefined>,
 ): void {

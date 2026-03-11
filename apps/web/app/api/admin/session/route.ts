@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { exchangeAdminCode, getAdminMe } from "@/lib/api";
-import { ADMIN_TOKEN_COOKIE } from "@/lib/admin-auth";
+import { ADMIN_TOKEN_COOKIE, getAdminTokenFromCookie } from "@/lib/admin-auth";
+import { apiUrl } from "@/lib/api";
+
+const MIN_TOKEN_LENGTH = 32;
+const MAX_TOKEN_LENGTH = 4_096;
+const JWT_SEGMENT_COUNT = 3;
+const SESSION_MAX_AGE_SECONDS = 4 * 60 * 60; // 4 hours
 
 interface SessionBody {
   token?: string;
@@ -8,8 +14,9 @@ interface SessionBody {
 }
 
 function isValidTokenShape(token: string): boolean {
-  if (token.length < 32 || token.length > 4096) return false;
-  return token.split(".").length === 3;
+  if (token.length < MIN_TOKEN_LENGTH || token.length > MAX_TOKEN_LENGTH)
+    return false;
+  return token.split(".").length === JWT_SEGMENT_COUNT;
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -42,16 +49,29 @@ export async function POST(request: Request): Promise<NextResponse> {
   response.cookies.set(ADMIN_TOKEN_COOKIE, token, {
     httpOnly: true,
     sameSite: "strict",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24,
+    secure: true,
+    path: "/admin",
+    maxAge: SESSION_MAX_AGE_SECONDS,
   });
   return response;
 }
 
 export async function DELETE(): Promise<NextResponse> {
+  // Revoke the JWT on the backend before clearing the cookie
+  const token = await getAdminTokenFromCookie();
+  if (token) {
+    await fetch(`${apiUrl}/auth/logout`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    }).catch(() => {
+      // Best-effort revocation; cookie will be cleared regardless
+    });
+  }
   const response = NextResponse.json({ success: true });
   response.headers.set("Cache-Control", "no-store");
-  response.cookies.delete(ADMIN_TOKEN_COOKIE);
+  response.cookies.delete({ name: ADMIN_TOKEN_COOKIE, path: "/admin" });
   return response;
 }

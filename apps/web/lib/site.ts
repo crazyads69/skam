@@ -18,7 +18,10 @@ export function getApiBaseUrl(): string {
   const fallback: string = "http://localhost:4000/api/v1";
   const candidate: string = rawEnv ? ensureAbsoluteUrl(rawEnv) : fallback;
   const normalized: string = normalizeUrl(candidate);
-  return normalized.endsWith("/api/v1") ? normalized : `${normalized}/api/v1`;
+  if (normalized.endsWith("/api/v1")) return normalized;
+  // Strip any partial /api/ suffix to avoid duplication
+  const base: string = normalized.replace(/\/api(?:\/v\d+)?$/, "");
+  return `${base}/api/v1`;
 }
 
 export function getSiteUrl(): string {

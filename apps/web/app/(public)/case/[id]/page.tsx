@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { getCase, getPublicEvidenceViewUrl } from "@/lib/api";
+import { resolveEvidenceUrls } from "@/lib/evidence-urls";
 import { formatMoneyVnd } from "@/lib/utils";
 
 interface CaseDetailPageProps {
@@ -28,17 +29,9 @@ export default async function CaseDetailPage({
   const response = await getCase(id).catch(() => null);
   const data = response?.data;
   if (!response?.success || !data) notFound();
-  const evidenceUrls = await Promise.all(
-    (data.evidenceFiles ?? []).map(async (item) => {
-      const urlResponse = await getPublicEvidenceViewUrl(id, item.id).catch(
-        () => null,
-      );
-      return {
-        id: item.id,
-        fileName: item.fileName ?? item.fileKey,
-        viewUrl: urlResponse?.data?.viewUrl ?? null,
-      };
-    }),
+  const evidenceUrls = await resolveEvidenceUrls(
+    data.evidenceFiles ?? [],
+    (f) => getPublicEvidenceViewUrl(id, f.id),
   );
   return (
     <main className="skam-container py-8">

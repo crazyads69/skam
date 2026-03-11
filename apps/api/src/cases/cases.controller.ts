@@ -11,7 +11,10 @@ import {
 import type { ApiResponse } from "@skam/shared/src/types";
 import { CacheService } from "../cache/cache.service";
 import { assertAllowedWriteOrigin } from "../common/request-origin";
-import { resolveRequestIdentifier } from "../common/request-identifier";
+import {
+  resolveRequestIdentifier,
+  type RequestLike,
+} from "../common/request-identifier";
 import { CreateCaseDto } from "./dto/create-case.dto";
 import { PaginateCaseDto } from "./dto/paginate-case.dto";
 import { SearchCaseDto } from "./dto/search-case.dto";
@@ -27,11 +30,7 @@ export class CasesController {
   @Post()
   public async createCase(
     @Body() payload: CreateCaseDto,
-    @Req()
-    request: {
-      ip?: string;
-      headers: Record<string, string | string[] | undefined>;
-    },
+    @Req() request: RequestLike,
   ): Promise<ApiResponse<Awaited<ReturnType<CasesService["createCase"]>>>> {
     assertAllowedWriteOrigin(request.headers);
     const candidateIp: string = resolveRequestIdentifier(request);
@@ -42,11 +41,7 @@ export class CasesController {
   @Get("search")
   public async searchCases(
     @Query() query: SearchCaseDto,
-    @Req()
-    request: {
-      ip?: string;
-      headers: Record<string, string | string[] | undefined>;
-    },
+    @Req() request: RequestLike,
   ): Promise<Awaited<ReturnType<CasesService["searchCases"]>>> {
     const identifier: string = resolveRequestIdentifier(request);
     const allowed: boolean = await this.cacheService.fixedWindowLimit(
@@ -63,11 +58,7 @@ export class CasesController {
   @Get("recent")
   public async listRecent(
     @Query() query: PaginateCaseDto,
-    @Req()
-    request: {
-      ip?: string;
-      headers: Record<string, string | string[] | undefined>;
-    },
+    @Req() request: RequestLike,
   ): Promise<Awaited<ReturnType<CasesService["listRecent"]>>> {
     const identifier: string = resolveRequestIdentifier(request);
     const allowed: boolean = await this.cacheService.fixedWindowLimit(
@@ -84,11 +75,7 @@ export class CasesController {
   @Get(":id")
   public async getCaseById(
     @Param("id") id: string,
-    @Req()
-    request: {
-      ip?: string;
-      headers: Record<string, string | string[] | undefined>;
-    },
+    @Req() request: RequestLike,
   ): Promise<ApiResponse<Awaited<ReturnType<CasesService["getCaseById"]>>>> {
     const identifier: string = resolveRequestIdentifier(request);
     const allowed: boolean = await this.cacheService.fixedWindowLimit(

@@ -16,6 +16,7 @@ import { CaseStatus } from "@skam/shared/src/types";
 import { BanksService } from "../banks/banks.service";
 import { type AdminPrincipal } from "../auth/auth.service";
 import { AdminGuard } from "../auth/guards/admin.guard";
+import { PaginateCaseDto } from "../cases/dto/paginate-case.dto";
 import { AdminService } from "./admin.service";
 import { ApproveCaseDto } from "./dto/approve-case.dto";
 import { RefineCaseDto } from "./dto/refine-case.dto";
@@ -36,8 +37,7 @@ export class AdminController {
   @Get("cases")
   public async listCases(
     @Query("status") status?: CaseStatus,
-    @Query("page") page?: string,
-    @Query("pageSize") pageSize?: string,
+    @Query() pagination?: PaginateCaseDto,
   ): Promise<Awaited<ReturnType<AdminService["listCases"]>>> {
     const allowedStatuses: CaseStatus[] = [
       CaseStatus.PENDING,
@@ -47,19 +47,9 @@ export class AdminController {
     if (status && !allowedStatuses.includes(status)) {
       throw new BadRequestException("Trạng thái không hợp lệ");
     }
-    const parsedPage: number = Number(page ?? "1");
-    const parsedPageSize: number = Number(pageSize ?? "20");
-    const safePage: number =
-      Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : Math.floor(parsedPage);
-    const safePageSize: number =
-      Number.isNaN(parsedPageSize) || parsedPageSize < 1
-        ? 20
-        : Math.min(100, Math.floor(parsedPageSize));
-    return this.adminService.listCases(
-      status,
-      safePage,
-      safePageSize,
-    );
+    const safePage: number = pagination?.page ?? 1;
+    const safePageSize: number = Math.min(100, pagination?.pageSize ?? 20);
+    return this.adminService.listCases(status, safePage, safePageSize);
   }
 
   @Get("cases/pending")

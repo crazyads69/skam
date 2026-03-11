@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import type { ScamCase } from "@skam/shared/src/types";
+import { escapeHtml } from "@skam/shared/src/utils/sanitize";
 
 @Injectable()
 export class TelegramNotifierService {
@@ -46,26 +47,17 @@ export class TelegramNotifierService {
     const lines: string[] = [
       "🚨 <b>Có báo cáo lừa đảo mới</b>",
       "",
-      `<b>Mã vụ việc:</b> <code>${this.escapeHtml(input.id)}</code>`,
-      `<b>Ngân hàng:</b> ${this.escapeHtml(input.bankCode)} - ${this.escapeHtml(input.bankIdentifier)}`,
-      `<b>Tên chủ tài khoản:</b> ${this.escapeHtml(input.bankName)}`,
-      `<b>Số tiền:</b> ${this.escapeHtml(amountLabel)}`,
-      `<b>Trạng thái:</b> ${this.escapeHtml(input.status)}`,
+      `<b>Mã vụ việc:</b> <code>${escapeHtml(input.id)}</code>`,
+      `<b>Ngân hàng:</b> ${escapeHtml(input.bankCode)} - ${escapeHtml(input.bankIdentifier)}`,
+      `<b>Tên chủ tài khoản:</b> ${escapeHtml(input.bankName)}`,
+      `<b>Số tiền:</b> ${escapeHtml(amountLabel)}`,
+      `<b>Trạng thái:</b> ${escapeHtml(input.status)}`,
       "",
-      `<b>Mô tả:</b> ${this.escapeHtml(input.originalDescription).slice(0, 1200)}`,
+      `<b>Mô tả:</b> ${escapeHtml(input.originalDescription).slice(0, 1_200)}`,
       "",
-      `<b>Trang kiểm duyệt:</b> ${this.escapeHtml(adminUrl)}`,
+      `<b>Trang kiểm duyệt:</b> ${escapeHtml(adminUrl)}`,
     ];
     return lines.join("\n");
-  }
-
-  private escapeHtml(input: string): string {
-    return input
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
   }
 
   private async fetchWithTimeout(

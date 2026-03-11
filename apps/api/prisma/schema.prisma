@@ -47,6 +47,7 @@ model ScamCase {
 
   @@index([bankIdentifier, bankCode])
   @@index([status])
+  @@index([status, createdAt])
   @@index([createdAt])
   @@index([profileId])
   @@index([submitterFingerprint])

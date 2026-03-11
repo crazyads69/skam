@@ -5,6 +5,20 @@
 - Deploy Web as one Vercel project with Root Directory: `apps/web`
 - Set `NEXT_PUBLIC_API_URL` in Web project to the API project URL (origin is recommended, e.g. `https://api.example.com`)
 
+## Cloudflare Proxy (Optional)
+If Cloudflare sits in front of your Vercel deployment:
+
+1. **API project env vars:**
+   - `TRUST_PROXY_HEADERS=true`
+   - `TRUSTED_PROXY_HEADER=cf-connecting-ip` (Cloudflare's real-IP header)
+2. **Cloudflare DNS:** Set DNS records to "Proxied" (orange cloud)
+3. **Cloudflare SSL:** Use "Full (strict)" SSL mode
+4. **CORS_ORIGIN** must list your Cloudflare domain (e.g. `https://skam.vn`)
+5. The Web CSP already allows Cloudflare Turnstile and Insights scripts
+
+Without Cloudflare, keep the defaults:
+- `TRUST_PROXY_HEADERS=true` with `TRUSTED_PROXY_HEADER=x-vercel-forwarded-for` (Vercel default)
+
 ## API Project
 - Root Directory: `apps/api`
 - Framework Preset: NestJS
@@ -21,6 +35,8 @@
 - `NEXTAUTH_SECRET`
 - `CORS_ORIGIN`
 - `HASH_SALT`
+- `TRUST_PROXY_HEADERS` (set to `true` for Vercel/Cloudflare)
+- `TRUSTED_PROXY_HEADER` (set to `cf-connecting-ip` for Cloudflare, default: `x-vercel-forwarded-for`)
 - `TURNSTILE_SECRET_KEY`
 - `TURNSTILE_ALLOW_BYPASS` (set to `false` in production)
 - `ADMIN_WHITELIST`

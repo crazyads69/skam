@@ -5,6 +5,7 @@ import {
 } from "@nestjs/common";
 import type { PaginatedResponse, ScamCase } from "@skam/shared/src/types";
 import { CaseStatus } from "@skam/shared/src/types";
+import { CASE_NOT_FOUND } from "../common/error-messages";
 import { mapScamCase } from "../common/case-mapper";
 import { PrismaService } from "../database/prisma.service";
 import { ApproveCaseDto } from "./dto/approve-case.dto";
@@ -52,7 +53,7 @@ export class AdminService {
       where: { id },
       include: { evidenceFiles: true, socialLinks: true },
     });
-    if (!found) throw new NotFoundException("Không tìm thấy vụ việc");
+    if (!found) throw new NotFoundException(CASE_NOT_FOUND);
     return mapScamCase(found);
   }
 
@@ -66,18 +67,17 @@ export class AdminService {
         where: { id },
         include: { socialLinks: true, evidenceFiles: true },
       });
-      if (!existing) throw new NotFoundException("Không tìm thấy vụ việc");
+      if (!existing) throw new NotFoundException(CASE_NOT_FOUND);
       if (existing.status !== CaseStatus.PENDING) {
         throw new BadRequestException(
           "Chỉ có thể duyệt vụ việc đang chờ xử lý",
         );
       }
-      const updated = await tx.scamCase.updateManyAndReturn({
+      const { count: updatedCount } = await tx.scamCase.updateMany({
         where: {
           id,
           status: CaseStatus.PENDING,
         },
-        select: { id: true },
         data: {
           status: CaseStatus.APPROVED,
           approvedAt: new Date(),
@@ -87,7 +87,7 @@ export class AdminService {
             payload.refinedDescription ?? existing.refinedDescription,
         },
       });
-      if (updated.length === 0) {
+      if (updatedCount === 0) {
         throw new BadRequestException("Vụ việc đã được xử lý bởi tác vụ khác");
       }
       await tx.evidenceFile.updateMany({
@@ -100,10 +100,10 @@ export class AdminService {
         existing.bankCode,
       );
       const approved = await tx.scamCase.findUnique({
-        where: { id: updated[0].id },
+        where: { id },
         include: { socialLinks: true, evidenceFiles: true },
       });
-      if (!approved) throw new NotFoundException("Không tìm thấy vụ việc");
+      if (!approved) throw new NotFoundException(CASE_NOT_FOUND);
       return mapScamCase(approved);
     });
   }
@@ -118,18 +118,17 @@ export class AdminService {
         where: { id },
         include: { socialLinks: true, evidenceFiles: true },
       });
-      if (!existing) throw new NotFoundException("Không tìm thấy vụ việc");
+      if (!existing) throw new NotFoundException(CASE_NOT_FOUND);
       if (existing.status !== CaseStatus.PENDING) {
         throw new BadRequestException(
           "Chỉ có thể từ chối vụ việc đang chờ xử lý",
         );
       }
-      const updated = await tx.scamCase.updateManyAndReturn({
+      const { count: updatedCount } = await tx.scamCase.updateMany({
         where: {
           id,
           status: CaseStatus.PENDING,
         },
-        select: { id: true },
         data: {
           status: CaseStatus.REJECTED,
           approvedAt: null,
@@ -137,7 +136,7 @@ export class AdminService {
           rejectionReason: payload.reason,
         },
       });
-      if (updated.length === 0) {
+      if (updatedCount === 0) {
         throw new BadRequestException("Vụ việc đã được xử lý bởi tác vụ khác");
       }
       await this.rebuildProfileAndStats(
@@ -146,10 +145,10 @@ export class AdminService {
         existing.bankCode,
       );
       const rejected = await tx.scamCase.findUnique({
-        where: { id: updated[0].id },
+        where: { id },
         include: { socialLinks: true, evidenceFiles: true },
       });
-      if (!rejected) throw new NotFoundException("Không tìm thấy vụ việc");
+      if (!rejected) throw new NotFoundException(CASE_NOT_FOUND);
       return mapScamCase(rejected);
     });
   }
@@ -162,7 +161,7 @@ export class AdminService {
       where: { id },
       include: { socialLinks: true, evidenceFiles: true },
     });
-    if (!existing) throw new NotFoundException("Không tìm thấy vụ việc");
+    if (!existing) throw new NotFoundException(CASE_NOT_FOUND);
     if (existing.status === CaseStatus.REJECTED) {
       throw new BadRequestException("Không thể chỉnh sửa vụ việc đã từ chối");
     }
@@ -181,7 +180,7 @@ export class AdminService {
       const existing = await tx.scamCase.findUnique({
         where: { id },
       });
-      if (!existing) throw new NotFoundException("Không tìm thấy vụ việc");
+      if (!existing) throw new NotFoundException(CASE_NOT_FOUND);
       await tx.scamCase.delete({ where: { id } });
       await this.rebuildProfileAndStats(
         tx as unknown as PrismaWriteClient,
@@ -200,26 +199,31 @@ export class AdminService {
       count: number;
     }>;
   }> {
-    const [totalCases, pending, approved, rejected, grouped] =
-      await Promise.all([
-        this.prisma.scamCase.count(),
-        this.prisma.scamCase.count({ where: { status: CaseStatus.PENDING } }),
-        this.prisma.scamCase.count({ where: { status: CaseStatus.APPROVED } }),
-        this.prisma.scamCase.count({ where: { status: CaseStatus.REJECTED } }),
-        this.prisma.scamCase.groupBy({
-          by: ["bankIdentifier", "bankCode"],
-          _count: { _all: true },
-          orderBy: { _count: { id: "desc" } },
-          take: 10,
-        }),
-      ]);
+    const [statusBreakdownRows, grouped] = await Promise.all([
+      this.prisma.scamCase.groupBy({
+        by: ["status"],
+        _count: { _all: true },
+      }),
+      this.prisma.scamCase.groupBy({
+        by: ["bankIdentifier", "bankCode"],
+        _count: { _all: true },
+        orderBy: { _count: { id: "desc" } },
+        take: 10,
+      }),
+    ]);
+    const statusBreakdown: Record<string, number> = {
+      [CaseStatus.PENDING]: 0,
+      [CaseStatus.APPROVED]: 0,
+      [CaseStatus.REJECTED]: 0,
+    };
+    let totalCases = 0;
+    for (const row of statusBreakdownRows) {
+      statusBreakdown[row.status] = row._count._all;
+      totalCases += row._count._all;
+    }
     return {
       totalCases,
-      statusBreakdown: {
-        [CaseStatus.PENDING]: pending,
-        [CaseStatus.APPROVED]: approved,
-        [CaseStatus.REJECTED]: rejected,
-      },
+      statusBreakdown,
       topReportedAccounts: grouped.map((item) => ({
         bankIdentifier: item.bankIdentifier,
         bankCode: item.bankCode,

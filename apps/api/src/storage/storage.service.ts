@@ -4,7 +4,12 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { BadRequestException, Injectable } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from "@nestjs/common";
 import { CaseStatus } from "@skam/shared/src/types";
 import { randomUUID } from "node:crypto";
 import { CacheService } from "../cache/cache.service";
@@ -50,12 +55,11 @@ export class StorageService {
     ],
   };
 
+  private readonly logger = new Logger(StorageService.name);
   private readonly expiresInSeconds: number = 60 * 15;
+  private readonly enabled: boolean;
   private readonly bucketName: string;
-  private readonly r2Endpoint: string;
-  private readonly r2AccessKeyId: string;
-  private readonly r2SecretAccessKey: string;
-  private readonly s3Client: S3Client;
+  private readonly s3Client: S3Client | null;
 
   public constructor(
     private readonly prisma: PrismaService,
@@ -65,27 +69,37 @@ export class StorageService {
     const accessKeyId: string | undefined = process.env.R2_ACCESS_KEY_ID;
     const secretAccessKey: string | undefined =
       process.env.R2_SECRET_ACCESS_KEY;
-    if (!endpoint || !accessKeyId || !secretAccessKey) {
-      throw new Error("Thiếu cấu hình lưu trữ R2");
+    this.enabled = Boolean(endpoint && accessKeyId && secretAccessKey);
+    if (!this.enabled) {
+      this.logger.warn("R2 storage not configured — uploads disabled");
+      this.bucketName = "";
+      this.s3Client = null;
+      return;
     }
     this.bucketName = process.env.R2_BUCKET_NAME ?? "skam";
-    this.r2Endpoint = endpoint;
-    this.r2AccessKeyId = accessKeyId;
-    this.r2SecretAccessKey = secretAccessKey;
     this.s3Client = new S3Client({
       region: "auto",
-      endpoint: this.r2Endpoint,
+      endpoint,
       forcePathStyle: false,
       credentials: {
-        accessKeyId: this.r2AccessKeyId,
-        secretAccessKey: this.r2SecretAccessKey,
+        accessKeyId: accessKeyId!,
+        secretAccessKey: secretAccessKey!,
       },
     });
+  }
+
+  private assertEnabled(): void {
+    if (!this.enabled || !this.s3Client) {
+      throw new ServiceUnavailableException(
+        "Dịch vụ lưu trữ hiện không khả dụng",
+      );
+    }
   }
 
   public async presignUpload(
     payload: UploadPresignDto,
   ): Promise<PresignPayload> {
+    this.assertEnabled();
     if (!this.allowedContentTypes.includes(payload.contentType)) {
       throw new BadRequestException("Loại tệp không được hỗ trợ");
     }
@@ -111,42 +125,14 @@ export class StorageService {
       ? `dedupe:upload:${normalizedFileHash}`
       : null;
     const noHashSpamKey: string = `dedupe:upload:nohash:${payload.contentType}:${payload.fileSize}:${normalizedFileName.toLowerCase()}`;
-    if (dedupeKey) {
-      const canProceed: boolean = await this.cache.fixedWindowLimit(
-        dedupeKey,
-        1,
-        this.expiresInSeconds,
-      );
-      if (!canProceed) {
-        throw new BadRequestException(
-          "Tệp đang được xử lý, vui lòng thử lại sau",
-        );
-      }
-    } else {
-      const canProceed: boolean = await this.cache.fixedWindowLimit(
-        noHashSpamKey,
-        2,
-        60,
-      );
-      if (!canProceed) {
-        throw new BadRequestException("Phát hiện tải lên lặp lại bất thường");
-      }
-    }
-    if (payload.fileHash) {
-      const existingCount: number = await this.prisma.evidenceFile.count({
-        where: { fileHash: normalizedFileHash },
-      });
-      if (existingCount > 0) {
-        throw new BadRequestException("Tệp đã tồn tại trong hệ thống");
-      }
-    }
+    await this.enforceUploadDedup(dedupeKey, noHashSpamKey, normalizedFileHash);
     const command = new PutObjectCommand({
       Bucket: this.bucketName,
       Key: fileKey,
       ContentType: payload.contentType,
       ContentLength: payload.fileSize,
     });
-    const uploadUrl: string = await getSignedUrl(this.s3Client, command, {
+    const uploadUrl: string = await getSignedUrl(this.s3Client!, command, {
       expiresIn: this.expiresInSeconds,
       signableHeaders: new Set(["content-type"]),
     });
@@ -157,22 +143,67 @@ export class StorageService {
     };
   }
 
+  private async enforceUploadDedup(
+    dedupeKey: string | null,
+    noHashSpamKey: string,
+    normalizedFileHash: string | undefined,
+  ): Promise<void> {
+    if (dedupeKey) {
+      const canProceed = await this.cache.fixedWindowLimit(
+        dedupeKey,
+        1,
+        this.expiresInSeconds,
+      );
+      if (!canProceed) {
+        throw new BadRequestException(
+          "Tệp đang được xử lý, vui lòng thử lại sau",
+        );
+      }
+    } else {
+      const canProceed = await this.cache.fixedWindowLimit(
+        noHashSpamKey,
+        2,
+        60,
+      );
+      if (!canProceed) {
+        throw new BadRequestException("Phát hiện tải lên lặp lại bất thường");
+      }
+    }
+    if (normalizedFileHash) {
+      const existingCount = await this.prisma.evidenceFile.count({
+        where: { fileHash: normalizedFileHash },
+      });
+      if (existingCount > 0) {
+        throw new BadRequestException("Tệp đã tồn tại trong hệ thống");
+      }
+    }
+  }
+
+  private readonly viewUrlCacheTtlSeconds: number = 10 * 60; // 10 min (under 15 min S3 expiry)
+
   public async presignViewUrl(fileKey: string): Promise<ViewUrlPayload> {
+    this.assertEnabled();
     if (!fileKey.startsWith("evidence/")) {
       throw new BadRequestException("Đường dẫn tệp không hợp lệ");
     }
+    const cacheKey: string = `presign:view:${fileKey}`;
+    const cached: ViewUrlPayload | null =
+      await this.cache.get<ViewUrlPayload>(cacheKey);
+    if (cached) return cached;
     const command = new GetObjectCommand({
       Bucket: this.bucketName,
       Key: fileKey,
     });
-    const viewUrl: string = await getSignedUrl(this.s3Client, command, {
+    const viewUrl: string = await getSignedUrl(this.s3Client!, command, {
       expiresIn: this.expiresInSeconds,
     });
-    return {
+    const result: ViewUrlPayload = {
       fileKey,
       viewUrl,
       expiresIn: this.expiresInSeconds,
     };
+    await this.cache.set(cacheKey, result, this.viewUrlCacheTtlSeconds);
+    return result;
   }
 
   public async presignPublicViewUrl(

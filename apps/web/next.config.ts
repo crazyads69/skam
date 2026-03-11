@@ -9,12 +9,13 @@ const csp: string = [
   "base-uri 'self'",
   "frame-ancestors 'none'",
   "object-src 'none'",
-  "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
+  "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://static.cloudflareinsights.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https:",
   "font-src 'self' data:",
-  `connect-src 'self' ${apiOrigin} https://challenges.cloudflare.com`,
+  `connect-src 'self' ${apiOrigin} https://challenges.cloudflare.com https://cloudflareinsights.com`,
   "frame-src 'self' https://challenges.cloudflare.com",
+  "worker-src 'self' blob:",
 ].join("; ");
 
 const nextConfig: NextConfig = {

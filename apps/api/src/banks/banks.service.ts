@@ -11,7 +11,7 @@ import { CacheService } from "../cache/cache.service";
 export class BanksService {
   private readonly cacheKey: string = "banks:vietqr:list";
   private readonly staleKey: string = "banks:vietqr:stale";
-  private readonly cacheTtlSeconds: number = 60 * 60 * 24;
+  private readonly cacheTtlSeconds: number = 24 * 60 * 60; // 1 day
   private readonly requestTimeoutMs: number = Math.max(
     1000,
     Number(process.env.VIETQR_TIMEOUT_MS ?? "5000"),
@@ -39,7 +39,8 @@ export class BanksService {
     if (banks.length) {
       this.memoryCache = { fetchedAt: Date.now(), data: banks };
       await this.cacheService.set(this.cacheKey, banks, this.cacheTtlSeconds);
-      await this.cacheService.set(this.staleKey, banks, 60 * 60 * 24 * 7);
+      const STALE_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
+      await this.cacheService.set(this.staleKey, banks, STALE_TTL_SECONDS);
       return banks;
     }
     const stale: Bank[] | null = await this.cacheService.get<Bank[]>(
@@ -94,15 +95,12 @@ export class BanksService {
   }
 
   private normalizeBank(input: VietQrBankItem): Bank | null {
+    const str = (val?: unknown): string => String(val ?? "").trim();
     const id: number = Number(input.id ?? 0);
-    const code: string = String(input.code ?? "")
-      .trim()
-      .toUpperCase();
-    const name: string = String(input.name ?? "").trim();
-    const bin: string = String(input.bin ?? "").trim();
-    const shortName: string = String(
-      input.shortName ?? input.short_name ?? code,
-    ).trim();
+    const code: string = str(input.code).toUpperCase();
+    const name: string = str(input.name);
+    const bin: string = str(input.bin);
+    const shortName: string = str(input.shortName ?? input.short_name ?? code);
     const transferSupported: 0 | 1 =
       Number(input.transferSupported ?? input.isTransfer ?? 0) === 1 ? 1 : 0;
     const lookupSupported: 0 | 1 =

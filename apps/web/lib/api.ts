@@ -37,22 +37,12 @@ async function apiRequest<T>(path: string, init?: ApiRequestInit): Promise<T> {
     cache: init?.next ? undefined : "no-store",
   });
   if (!response.ok) {
-    const payload: unknown = await response.json().catch(() => null);
-    const errorField: unknown =
-      typeof payload === "object" &&
-      payload !== null &&
-      "error" in payload &&
-      (payload as { error?: unknown }).error
-        ? (payload as { error: unknown }).error
-        : null;
-    const messageField: unknown =
-      typeof payload === "object" &&
-      payload !== null &&
-      "message" in payload &&
-      (payload as { message?: unknown }).message
-        ? (payload as { message: unknown }).message
-        : null;
-    const raw: unknown = errorField ?? messageField;
+    const payload = await response
+      .json()
+      .catch((): Record<string, unknown> => ({}));
+    const raw: unknown =
+      (payload as Record<string, unknown>)?.error ??
+      (payload as Record<string, unknown>)?.message;
     const message: string =
       typeof raw === "string"
         ? raw
@@ -169,7 +159,6 @@ export async function getSummary(): Promise<
   ApiResponse<{
     totalCases: number;
     totalApprovedCases: number;
-    totalPendingCases: number;
     totalScammerProfiles: number;
     totalScamAmount: number;
   }>

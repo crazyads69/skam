@@ -2,24 +2,30 @@ import type { ReactElement } from "react";
 import Link from "next/link";
 import { CaseStatus } from "@skam/shared/types";
 import { listAdminCases } from "@/lib/api";
-import { getAdminTokenFromCookie } from "@/lib/admin-auth";
+import { requireAdminToken } from "@/lib/admin-auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 interface AdminCasesPageProps {
-  readonly searchParams: Promise<{ status?: CaseStatus }>;
+  readonly searchParams: Promise<{ status?: CaseStatus; page?: string }>;
 }
 
 export default async function AdminCasesPage({
   searchParams,
 }: AdminCasesPageProps): Promise<ReactElement> {
-  const token = await getAdminTokenFromCookie();
-  const { status } = await searchParams;
-  const payload = token
-    ? await listAdminCases(token, status).catch(() => null)
-    : null;
+  const token = await requireAdminToken();
+  const { status, page: pageParam } = await searchParams;
+  const currentPage: number = Math.max(1, Number(pageParam) || 1);
+  const pageSize: number = 50;
+  const payload = await listAdminCases(
+    token,
+    status,
+    currentPage,
+    pageSize,
+  ).catch(() => null);
   const selectedStatus: string = status ?? "all";
+  const totalPages: number = payload?.totalPages ?? 1;
   return (
     <section className="grid gap-3">
       <Card className="p-4">
@@ -40,14 +46,18 @@ export default async function AdminCasesPage({
           </Link>
           <Link href={`/admin/cases?status=${CaseStatus.APPROVED}`}>
             <Button
-              variant={selectedStatus === CaseStatus.APPROVED ? "neon" : "ghost"}
+              variant={
+                selectedStatus === CaseStatus.APPROVED ? "neon" : "ghost"
+              }
             >
               Đã duyệt
             </Button>
           </Link>
           <Link href={`/admin/cases?status=${CaseStatus.REJECTED}`}>
             <Button
-              variant={selectedStatus === CaseStatus.REJECTED ? "danger" : "ghost"}
+              variant={
+                selectedStatus === CaseStatus.REJECTED ? "danger" : "ghost"
+              }
             >
               Từ chối
             </Button>
@@ -74,6 +84,31 @@ export default async function AdminCasesPage({
           </Card>
         </Link>
       ))}
+      {totalPages > 1 ? (
+        <Card className="flex items-center justify-center gap-2 p-4">
+          {currentPage > 1 ? (
+            <Link
+              href={`/admin/cases?${new URLSearchParams({ ...(status ? { status } : {}), page: String(currentPage - 1) }).toString()}`}
+            >
+              <Button variant="ghost" size="sm">
+                &larr; Trước
+              </Button>
+            </Link>
+          ) : null}
+          <span className="text-sm text-[var(--text-secondary)]">
+            Trang {currentPage} / {totalPages}
+          </span>
+          {currentPage < totalPages ? (
+            <Link
+              href={`/admin/cases?${new URLSearchParams({ ...(status ? { status } : {}), page: String(currentPage + 1) }).toString()}`}
+            >
+              <Button variant="ghost" size="sm">
+                Sau &rarr;
+              </Button>
+            </Link>
+          ) : null}
+        </Card>
+      ) : null}
     </section>
   );
 }

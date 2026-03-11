@@ -10,8 +10,8 @@ export interface AdminPrincipal {
 
 @Injectable()
 export class AuthService {
-  private readonly loginCodeTtlSeconds: number = 120;
-  private readonly tokenTtlSeconds: number = 60 * 60 * 24;
+  private readonly loginCodeTtlSeconds: number = 2 * 60; // 2 minutes
+  private readonly tokenTtlSeconds: number = 24 * 60 * 60; // 24 hours
 
   public constructor(private readonly cache: CacheService) {}
 
@@ -94,7 +94,7 @@ export class AuthService {
   public async exchangeAdminLoginCode(
     code: string,
   ): Promise<{ token: string; principal: AdminPrincipal }> {
-    if (!/^[a-f0-9]{32,128}$/.test(code)) {
+    if (!/^[a-f0-9]{48}$/.test(code)) {
       throw new UnauthorizedException("Mã đăng nhập không hợp lệ");
     }
     const cachedPrincipal = await this.cache.get<AdminPrincipal>(
