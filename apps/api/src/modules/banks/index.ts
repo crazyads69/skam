@@ -23,7 +23,8 @@ export const banksModule = new Elysia({ prefix: "/banks" })
 
     set.headers["cache-control"] =
       "public, max-age=3600, stale-while-revalidate=86400";
-    return banksService.listBanks();
+    const data = await banksService.listBanks();
+    return { success: true, data };
   })
   .get(
     "/search",
@@ -44,8 +45,8 @@ export const banksModule = new Elysia({ prefix: "/banks" })
       }
 
       const q = query.q?.trim() ?? "";
-      if (!q) return banksService.listBanks();
-      return banksService.searchBanks(q);
+      const data = q ? await banksService.searchBanks(q) : await banksService.listBanks();
+      return { success: true, data };
     },
     {
       query: t.Object({

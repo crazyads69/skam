@@ -91,12 +91,14 @@ export function FloatingParticles(): ReactElement {
     init();
     draw();
 
-    window.addEventListener("resize", () => {
+    function handleResize() {
       resize();
       init();
-    });
+    }
+    window.addEventListener("resize", handleResize);
 
     return () => {
+      window.removeEventListener("resize", handleResize);
       cancelAnimationFrame(animationId);
       window.removeEventListener("resize", resize);
     };

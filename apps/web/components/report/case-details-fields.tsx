@@ -14,9 +14,6 @@ export function CaseDetailsFields(): ReactElement {
 
   return (
     <>
-      <p className="mt-2 text-sm font-medium text-foreground">
-        Bước 2: Chi tiết vụ việc
-      </p>
       <div className="grid gap-1.5">
         <label htmlFor="amount" className="text-sm font-medium">
           Số tiền bị lừa (VND)
@@ -29,6 +26,9 @@ export function CaseDetailsFields(): ReactElement {
           error={!!errors.amount}
           {...register("amount")}
         />
+        {errors.amount ? (
+          <p className="text-xs text-danger">{errors.amount.message}</p>
+        ) : null}
       </div>
       <div className="grid gap-1.5">
         <label htmlFor="scammerName" className="text-sm font-medium">
@@ -48,6 +48,7 @@ export function CaseDetailsFields(): ReactElement {
           id="originalDescription"
           rows={6}
           placeholder="Mô tả vụ việc chi tiết (tối thiểu 50 ký tự)"
+          error={!!errors.originalDescription}
           {...register("originalDescription")}
         />
         {errors.originalDescription ? (

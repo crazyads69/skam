@@ -22,7 +22,8 @@ export const profilesModule = new Elysia({ prefix: "/profiles" }).get(
       throw tooManyRequests("Quá nhiều yêu cầu, vui lòng thử lại sau");
     }
 
-    return profilesService.getByIdentifier(params.identifier, query.bankCode);
+    const data = await profilesService.getByIdentifier(params.identifier, query.bankCode);
+    return { success: true, data };
   },
   {
     params: t.Object({

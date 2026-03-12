@@ -117,10 +117,14 @@ export interface PresignUploadPayload {
 
 export async function presignUpload(
   input: PresignUploadInput,
+  turnstileToken?: string,
 ): Promise<ApiResponse<PresignUploadPayload>> {
   return apiRequest<ApiResponse<PresignUploadPayload>>("/upload/presign", {
     method: "POST",
     body: input,
+    headers: turnstileToken
+      ? { "x-turnstile-token": turnstileToken }
+      : undefined,
   });
 }
 

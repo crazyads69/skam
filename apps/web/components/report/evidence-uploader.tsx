@@ -3,9 +3,7 @@
 import type { ReactElement } from "react";
 import { useFieldArray, useFormContext } from "react-hook-form";
 import type { ReportFormValues } from "@/components/report/report-form.schema";
-import { Upload } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Upload, X } from "lucide-react";
 
 export interface UploadItem {
   fileName: string;
@@ -32,16 +30,19 @@ export function EvidenceUploader({
 
   return (
     <>
-      <label className="block rounded-lg border border-dashed border-border p-4 text-sm text-(--text-secondary)">
-        <span className="mb-2 inline-flex items-center gap-2 text-foreground">
-          <Upload className="size-4 text-neon" />
+      <label className="group flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border p-6 text-sm text-(--text-secondary) transition-colors hover:border-neon/50 hover:bg-neon/5">
+        <Upload className="size-5 text-neon" />
+        <span className="text-center text-foreground font-medium">
           Tải bằng chứng (tối đa 5 tệp)
         </span>
-        <Input
+        <span className="text-xs text-(--text-tertiary)">
+          Hình ảnh, video, PDF, Word — nhấn để chọn tệp
+        </span>
+        <input
           type="file"
           accept="image/*,video/mp4,video/webm,audio/mpeg,audio/wav,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
           multiple
-          className="mt-2 block w-full"
+          className="sr-only"
           onChange={(event) => {
             onUploadFiles(event.target.files)
               .then((uploaded) => {
@@ -59,23 +60,26 @@ export function EvidenceUploader({
         />
       </label>
       {fields.length > 0 ? (
-        <ul className="grid gap-1 text-xs text-(--text-tertiary)">
+        <ul className="grid gap-2">
           {fields.map((item, index) => (
             <li
               key={item.id}
-              className="flex items-center justify-between gap-2"
+              className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface-1 px-3 py-2"
             >
-              <span>
-                {item.fileName} · {(item.fileSize / 1024).toFixed(1)} KB
+              <span className="truncate text-xs text-(--text-secondary)">
+                {item.fileName}{" "}
+                <span className="text-(--text-tertiary)">
+                  · {(item.fileSize / 1024).toFixed(1)} KB
+                </span>
               </span>
-              <Button
+              <button
                 type="button"
-                size="default"
-                variant="ghost"
+                className="flex size-6 shrink-0 items-center justify-center rounded-md text-(--text-tertiary) transition-colors hover:bg-danger/10 hover:text-danger"
                 onClick={() => remove(index)}
+                aria-label={`Xoá ${item.fileName}`}
               >
-                Xoá
-              </Button>
+                <X className="size-3.5" />
+              </button>
             </li>
           ))}
         </ul>

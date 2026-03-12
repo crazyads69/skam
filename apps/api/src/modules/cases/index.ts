@@ -16,7 +16,8 @@ export const casesModule = new Elysia({ prefix: "/cases" })
         headers as Record<string, string | undefined>,
         ip,
       );
-      return casesService.createCase(body, identifier);
+      const data = await casesService.createCase(body, identifier);
+      return { success: true, data };
     },
     { body: CreateCaseBody },
   )
@@ -75,5 +76,6 @@ export const casesModule = new Elysia({ prefix: "/cases" })
     );
     if (!allowed)
       throw tooManyRequests("Bạn đã truy cập quá nhiều, vui lòng thử lại sau");
-    return casesService.getCaseById(params.id, identifier);
+    const data = await casesService.getCaseById(params.id, identifier);
+    return { success: true, data };
   });

@@ -20,18 +20,22 @@ export function BankSelector({
   value,
   onChange,
 }: BankSelectorProps): ReactElement {
+  const items =
+    banks.length > 0
+      ? banks
+      : [{ code: "VCB", shortName: "VCB" }];
+
   return (
     <Select value={value || "VCB"} onValueChange={onChange}>
       <SelectTrigger>
         <SelectValue placeholder="Chọn ngân hàng" />
       </SelectTrigger>
       <SelectContent>
-        {banks.map((bank) => (
+        {items.map((bank) => (
           <SelectItem key={bank.code} value={bank.code}>
             {bank.shortName} ({bank.code})
           </SelectItem>
         ))}
-        {banks.length === 0 ? <SelectItem value="VCB">VCB</SelectItem> : null}
       </SelectContent>
     </Select>
   );

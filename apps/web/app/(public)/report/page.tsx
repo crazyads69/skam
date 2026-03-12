@@ -114,6 +114,9 @@ export default function ReportPage(): ReactElement {
     if (remainingSlots === 0) {
       throw new Error("Chỉ được tải tối đa 5 tệp");
     }
+    if (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken) {
+      throw new Error("Vui lòng xác minh Turnstile trước khi tải tệp");
+    }
     const list = Array.from(files).slice(0, remainingSlots);
     const nextUploads: UploadItem[] = [];
     setStatus("Đang tải bằng chứng...");
@@ -122,12 +125,15 @@ export default function ReportPage(): ReactElement {
         throw new Error(`Tệp ${file.name} vượt quá 100MB`);
       }
       const fileHash = await sha256(file);
-      const presign = await presignUpload({
-        fileName: file.name,
-        fileSize: file.size,
-        contentType: file.type,
-        fileHash,
-      });
+      const presign = await presignUpload(
+        {
+          fileName: file.name,
+          fileSize: file.size,
+          contentType: file.type,
+          fileHash,
+        },
+        turnstileToken || undefined,
+      );
       if (!presign.success || !presign.data) {
         throw new Error(presign.error ?? "Không thể lấy URL tải tệp");
       }
@@ -248,16 +254,30 @@ export default function ReportPage(): ReactElement {
                       : 1
                 }
               />
-              <BankAccountFields banks={banks} />
-              <CaseDetailsFields />
-              <SocialLinksEditor />
-              <p className="mt-2 text-sm font-medium text-foreground">
-                Bước 3: Bằng chứng và xác minh
-              </p>
-              <EvidenceUploader
-                onUploadFiles={onUploadFiles}
-                onError={(message) => setStatus(message)}
-              />
+
+              {/* Step 1: Account Info */}
+              <fieldset className="grid gap-4">
+                <BankAccountFields banks={banks} />
+              </fieldset>
+
+              <hr className="border-(--border-default)" />
+
+              {/* Step 2: Case Details */}
+              <fieldset className="grid gap-4">
+                <CaseDetailsFields />
+                <SocialLinksEditor />
+              </fieldset>
+
+              <hr className="border-(--border-default)" />
+
+              {/* Step 3: Evidence */}
+              <fieldset className="grid gap-4">
+                <EvidenceUploader
+                  onUploadFiles={onUploadFiles}
+                  onError={(message) => setStatus(message)}
+                />
+              </fieldset>
+
               <div id="turnstile-widget" />
 
               <Button

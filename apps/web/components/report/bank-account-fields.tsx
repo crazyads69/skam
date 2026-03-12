@@ -22,9 +22,6 @@ export function BankAccountFields({
 
   return (
     <>
-      <p className="text-sm font-medium text-foreground">
-        Bước 1: Thông tin tài khoản
-      </p>
       <div className="grid gap-1.5">
         <label htmlFor="bankIdentifier" className="text-sm font-medium">
           Số tài khoản <span className="text-danger">*</span>
@@ -56,13 +53,18 @@ export function BankAccountFields({
       </div>
 
       <input type="hidden" {...register("bankCode")} />
-      <BankSelector
-        banks={banks}
-        value={watch("bankCode") || "VCB"}
-        onChange={(value: string) =>
-          setValue("bankCode", value, { shouldValidate: true })
-        }
-      />
+      <div className="grid gap-1.5">
+        <label className="text-sm font-medium">
+          Ngân hàng <span className="text-danger">*</span>
+        </label>
+        <BankSelector
+          banks={banks}
+          value={watch("bankCode") || "VCB"}
+          onChange={(value: string) =>
+            setValue("bankCode", value, { shouldValidate: true })
+          }
+        />
+      </div>
     </>
   );
 }

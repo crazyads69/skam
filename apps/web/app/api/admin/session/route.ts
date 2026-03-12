@@ -46,10 +46,12 @@ export async function POST(request: Request): Promise<NextResponse> {
     data: me.data ?? null,
   });
   response.headers.set("Cache-Control", "no-store");
+  const isSecure =
+    process.env.NODE_ENV === "production" || request.url.startsWith("https");
   response.cookies.set(ADMIN_TOKEN_COOKIE, token, {
     httpOnly: true,
-    sameSite: "strict",
-    secure: true,
+    sameSite: "lax",
+    secure: isSecure,
     path: "/admin",
     maxAge: SESSION_MAX_AGE_SECONDS,
   });

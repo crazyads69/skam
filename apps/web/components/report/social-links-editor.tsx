@@ -33,7 +33,7 @@ export function SocialLinksEditor(): ReactElement {
       {fields.map((field, index) => (
         <div
           key={field.id}
-          className="grid gap-2 rounded-lg border border-border bg-surface-1 p-3 sm:grid-cols-[140px_1fr_1fr_auto]"
+          className="grid gap-2 rounded-lg border border-border bg-surface-1 p-3 sm:grid-cols-[140px_1fr_auto]"
         >
           <Select
             value={
@@ -60,20 +60,27 @@ export function SocialLinksEditor(): ReactElement {
               ))}
             </SelectContent>
           </Select>
-          <Input
-            placeholder="https://..."
-            {...register(`socialLinks.${index}.url`)}
-          />
-          {formState.errors.socialLinks?.[index]?.url?.message ? (
-            <p className="text-xs text-danger sm:col-span-2">
-              {formState.errors.socialLinks[index]?.url?.message}
-            </p>
-          ) : null}
-          <Input
-            placeholder="username (tuỳ chọn)"
-            {...register(`socialLinks.${index}.username`)}
-          />
-          <Button type="button" variant="ghost" onClick={() => remove(index)}>
+          <div className="grid gap-2">
+            <Input
+              placeholder="https://..."
+              {...register(`socialLinks.${index}.url`)}
+            />
+            {formState.errors.socialLinks?.[index]?.url?.message ? (
+              <p className="text-xs text-danger">
+                {formState.errors.socialLinks[index]?.url?.message}
+              </p>
+            ) : null}
+            <Input
+              placeholder="username (tuỳ chọn)"
+              {...register(`socialLinks.${index}.username`)}
+            />
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => remove(index)}
+            aria-label={`Xoá liên kết ${watch(`socialLinks.${index}.platform`) || "mạng xã hội"}`}
+          >
             Xoá
           </Button>
         </div>

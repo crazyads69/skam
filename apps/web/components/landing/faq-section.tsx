@@ -64,6 +64,7 @@ export function FaqSection(): ReactElement {
               onClick={() => setOpenIndex(isOpen ? null : index)}
               className="flex w-full cursor-pointer items-center justify-between gap-4 p-5 text-left"
               aria-expanded={isOpen}
+              aria-controls={`faq-panel-${index}`}
             >
               <span className="text-sm font-medium text-foreground md:text-base">
                 {item.question}
@@ -77,6 +78,8 @@ export function FaqSection(): ReactElement {
               />
             </button>
             <div
+              id={`faq-panel-${index}`}
+              role="region"
               className={cn(
                 "grid transition-all duration-300",
                 isOpen
