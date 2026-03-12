@@ -1,4 +1,4 @@
-import { ForbiddenException } from "@nestjs/common";
+import { forbidden } from "./error";
 
 function readHeaderValue(
   headers: Record<string, string | string[] | undefined>,
@@ -55,6 +55,6 @@ export function assertAllowedWriteOrigin(
     originHeader || resolveOriginFromReferer(refererHeader);
   const allowedOrigins: string[] = resolveAllowedOrigins();
   if (!candidateOrigin || !allowedOrigins.includes(candidateOrigin)) {
-    throw new ForbiddenException("Nguồn yêu cầu không hợp lệ");
+    throw forbidden("Nguồn yêu cầu không hợp lệ");
   }
 }

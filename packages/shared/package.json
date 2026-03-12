@@ -12,6 +12,7 @@
     "./constants": "./src/constants/index.ts",
     "./src/constants": "./src/constants/index.ts",
     "./utils": "./src/utils/index.ts",
+    "./src/utils": "./src/utils/index.ts",
     "./schemas": "./src/schemas/index.ts"
   },
   "scripts": {

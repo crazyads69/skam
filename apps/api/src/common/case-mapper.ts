@@ -1,49 +1,13 @@
 import type { ScamCase } from "@skam/shared/src/types";
 import { CaseStatus, SocialPlatform } from "@skam/shared/src/types";
+import type { ScamCaseRow, EvidenceFileRow, SocialLinkRow } from "../db/schema";
 
-interface RawCaseInput {
-  id: string;
-  bankIdentifier: string;
-  bankName: string;
-  bankCode: string;
-  amount: number | null;
-  scammerName: string | null;
-  originalDescription: string;
-  refinedDescription: string | null;
-  status: string;
-  approvedAt?: Date | null;
-  approvedBy?: string | null;
-  rejectionReason?: string | null;
-  submitterFingerprint?: string | null;
-  submitterIpHash?: string | null;
-  viewCount: number;
-  evidenceFiles?: Array<{
-    id: string;
-    caseId: string;
-    fileType: string;
-    fileKey: string;
-    fileName: string | null;
-    fileSize: number | null;
-    fileHash: string | null;
-    isApproved: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-  }>;
-  socialLinks?: Array<{
-    id: string;
-    platform: string;
-    url: string;
-    username: string | null;
-    caseId: string | null;
-    profileId: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-  }>;
-  createdAt: Date;
-  updatedAt: Date;
+export interface RawCaseWithRelations extends ScamCaseRow {
+  evidenceFiles?: EvidenceFileRow[];
+  socialLinks?: SocialLinkRow[];
 }
 
-export function mapScamCase(input: RawCaseInput): ScamCase {
+export function mapScamCase(input: RawCaseWithRelations): ScamCase {
   return {
     id: input.id,
     bankIdentifier: input.bankIdentifier,
@@ -54,35 +18,35 @@ export function mapScamCase(input: RawCaseInput): ScamCase {
     originalDescription: input.originalDescription,
     refinedDescription: input.refinedDescription,
     status: input.status as CaseStatus,
-    approvedAt: input.approvedAt?.toISOString() ?? null,
+    approvedAt: input.approvedAt ?? null,
     approvedBy: input.approvedBy ?? null,
     rejectionReason: input.rejectionReason ?? null,
     submitterFingerprint: input.submitterFingerprint ?? null,
     submitterIpHash: input.submitterIpHash ?? null,
     viewCount: input.viewCount,
-    evidenceFiles: input.evidenceFiles?.map((item) => ({
-      id: item.id,
-      caseId: item.caseId,
-      fileType: item.fileType,
-      fileKey: item.fileKey,
-      fileName: item.fileName,
-      fileSize: item.fileSize,
-      fileHash: item.fileHash,
-      isApproved: item.isApproved,
-      createdAt: item.createdAt.toISOString(),
-      updatedAt: item.updatedAt.toISOString(),
+    evidenceFiles: input.evidenceFiles?.map((f) => ({
+      id: f.id,
+      caseId: f.caseId,
+      fileType: f.fileType,
+      fileKey: f.fileKey,
+      fileName: f.fileName,
+      fileSize: f.fileSize,
+      fileHash: f.fileHash,
+      isApproved: f.isApproved,
+      createdAt: f.createdAt,
+      updatedAt: f.updatedAt,
     })),
-    socialLinks: input.socialLinks?.map((item) => ({
-      id: item.id,
-      platform: item.platform as SocialPlatform,
-      url: item.url,
-      username: item.username,
-      caseId: item.caseId,
-      profileId: item.profileId,
-      createdAt: item.createdAt.toISOString(),
-      updatedAt: item.updatedAt.toISOString(),
+    socialLinks: input.socialLinks?.map((s) => ({
+      id: s.id,
+      platform: s.platform as SocialPlatform,
+      url: s.url,
+      username: s.username,
+      caseId: s.caseId,
+      profileId: s.profileId,
+      createdAt: s.createdAt,
+      updatedAt: s.updatedAt,
     })),
-    createdAt: input.createdAt.toISOString(),
-    updatedAt: input.updatedAt.toISOString(),
+    createdAt: input.createdAt,
+    updatedAt: input.updatedAt,
   };
 }
