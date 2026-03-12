@@ -45,7 +45,9 @@ export const banksModule = new Elysia({ prefix: "/banks" })
       }
 
       const q = query.q?.trim() ?? "";
-      const data = q ? await banksService.searchBanks(q) : await banksService.listBanks();
+      const data = q
+        ? await banksService.searchBanks(q)
+        : await banksService.listBanks();
       return { success: true, data };
     },
     {

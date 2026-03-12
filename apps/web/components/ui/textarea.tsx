@@ -5,7 +5,11 @@ type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   error?: boolean;
 };
 
-export function Textarea({ className, error, ...props }: TextareaProps): ReactElement {
+export function Textarea({
+  className,
+  error,
+  ...props
+}: TextareaProps): ReactElement {
   return (
     <textarea
       aria-invalid={error || undefined}

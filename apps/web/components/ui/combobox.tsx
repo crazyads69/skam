@@ -49,8 +49,7 @@ export function Combobox({
     const q = query.toLowerCase();
     return options.filter(
       (o) =>
-        o.label.toLowerCase().includes(q) ||
-        o.value.toLowerCase().includes(q),
+        o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q),
     );
   }, [options, query]);
 
@@ -162,9 +161,7 @@ export function Combobox({
         onClick={() => (open ? closeDropdown() : openDropdown())}
         onKeyDown={handleKeyDown}
       >
-        <span className="truncate">
-          {selectedLabel || placeholder}
-        </span>
+        <span className="truncate">{selectedLabel || placeholder}</span>
         <ChevronDown
           className={cn(
             "size-4 shrink-0 opacity-70 transition-transform duration-200",
@@ -223,16 +220,13 @@ export function Combobox({
                     className={cn(
                       "relative flex w-full cursor-pointer select-none items-center rounded-md py-2 pl-8 pr-2 text-sm outline-none transition-colors",
                       isHighlighted && "bg-surface-3 text-foreground",
-                      !isHighlighted &&
-                        "text-foreground hover:bg-surface-3/50",
+                      !isHighlighted && "text-foreground hover:bg-surface-3/50",
                     )}
                     onMouseEnter={() => setHighlightIndex(index)}
                     onClick={() => handleOptionClick(option.value)}
                   >
                     <span className="absolute left-2 flex size-4 items-center justify-center">
-                      {isSelected && (
-                        <Check className="size-4 text-neon" />
-                      )}
+                      {isSelected && <Check className="size-4 text-neon" />}
                     </span>
                     {option.label}
                   </li>

@@ -20,10 +20,7 @@ export function BankSelector({
   value,
   onChange,
 }: BankSelectorProps): ReactElement {
-  const items =
-    banks.length > 0
-      ? banks
-      : [{ code: "VCB", shortName: "VCB" }];
+  const items = banks.length > 0 ? banks : [{ code: "VCB", shortName: "VCB" }];
 
   return (
     <Select value={value || "VCB"} onValueChange={onChange}>
